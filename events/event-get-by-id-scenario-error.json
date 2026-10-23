@@ -1,0 +1,13 @@
+{
+    "httpMethod": "GET",
+    "path": "/demo-id",
+    "pathParameters": {
+        "id": "demo-id"
+    },
+    "queryStringParameters": {
+        "scenario": "error"
+    },
+    "requestContext": {
+        "requestId": "local-demo-error"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "httpMethod": "GET",
+    "path": "/demo-id",
+    "pathParameters": {
+        "id": "demo-id"
+    },
+    "queryStringParameters": {
+        "scenario": "latency"
+    },
+    "requestContext": {
+        "requestId": "local-demo-latency"
+    }
+}

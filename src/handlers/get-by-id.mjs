@@ -1,47 +1,88 @@
-// Create clients and set shared const values outside of the handler.
-
-// Create a DocumentClient that represents the query to add an item
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
-const client = new DynamoDBClient({});
-const ddbDocClient = DynamoDBDocumentClient.from(client);
-
-// Get the DynamoDB table name from environment variables
-const tableName = process.env.SAMPLE_TABLE;
+import { GetCommand } from '@aws-sdk/lib-dynamodb';
+import { ddbDocClient, tableName } from '../lib/dynamodb.mjs';
+import {
+    DEMO_ERROR_MESSAGE,
+    DEMO_LATENCY_MS,
+    logDemo,
+    resolveScenario,
+    runWithSubsegment,
+    sleep,
+} from '../lib/demo-observability.mjs';
 
 /**
- * A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+ * GET /{id} — demo scenarios via query param `scenario` (normal | error | latency).
  */
 export const getByIdHandler = async (event) => {
-  if (event.httpMethod !== 'GET') {
-    throw new Error(`getMethod only accept GET method, you tried: ${event.httpMethod}`);
-  }
-  // All log statements are written to CloudWatch
-  console.info('received:', event);
- 
-  // Get id from pathParameters from APIGateway because of `/{id}` at template.yaml
-  const id = event.pathParameters.id;
- 
-  // Get the item from the table
-  // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#get-property
-  var params = {
-    TableName : tableName,
-    Key: { id: id },
-  };
+    if (event.httpMethod !== 'GET') {
+        throw new Error(`getMethod only accept GET method, you tried: ${event.httpMethod}`);
+    }
 
-  try {
-    const data = await ddbDocClient.send(new GetCommand(params));
-    var item = data.Item;
-  } catch (err) {
-    console.log("Error", err);
-  }
- 
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify(item)
-  };
- 
-  // All log statements are written to CloudWatch
-  console.info(`response from: ${event.path} statusCode: ${response.statusCode} body: ${response.body}`);
-  return response;
-}
+    const id = event.pathParameters?.id;
+    const scenario = resolveScenario(event);
+    const requestId = event.requestContext?.requestId;
+
+    logDemo({
+        level: 'info',
+        handler: 'getById',
+        scenario,
+        id,
+        requestId,
+        path: event.path,
+    });
+
+    if (scenario === 'error') {
+        logDemo({
+            level: 'error',
+            handler: 'getById',
+            scenario: 'error',
+            id,
+            requestId,
+            message: DEMO_ERROR_MESSAGE,
+        });
+        throw new Error(DEMO_ERROR_MESSAGE);
+    }
+
+    if (scenario === 'latency') {
+        await runWithSubsegment('demo-artificial-latency', () => sleep(DEMO_LATENCY_MS));
+    }
+
+    const params = {
+        TableName: tableName,
+        Key: { id },
+    };
+
+    let item;
+    try {
+        const data = await ddbDocClient.send(new GetCommand(params));
+        item = data.Item;
+    } catch (err) {
+        logDemo({
+            level: 'error',
+            handler: 'getById',
+            scenario,
+            id,
+            requestId,
+            message: err.message,
+        });
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Internal Server Error' }),
+        };
+    }
+
+    const response = {
+        statusCode: 200,
+        body: JSON.stringify(item),
+    };
+
+    logDemo({
+        level: 'info',
+        handler: 'getById',
+        scenario,
+        id,
+        requestId,
+        statusCode: response.statusCode,
+    });
+
+    return response;
+};
