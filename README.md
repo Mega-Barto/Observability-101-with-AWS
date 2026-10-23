@@ -422,6 +422,38 @@ Promotional credits, when available, are not a guarantee of zero cost. Budget al
 
 **Do not deploy until you have reviewed the infrastructure, the permissions, and the expected budget.**
 
+#### Deploy profile and cost order of magnitude
+
+| Item | Typical demo usage (rehearsals + talk) |
+|---|---|
+| **Region / profile** | `us-east-1`, AWS CLI profile `observability-demo` (see `samconfig.toml`) |
+| **Lambda + API Gateway** | Often within free tier for hundreds of requests |
+| **DynamoDB on-demand** | Cents at demo volume |
+| **CloudWatch Logs** | Main variable; 7-day retention and low traffic usually stay under a few USD |
+| **X-Ray** | Low trace volume is usually cents |
+| **S3 (SAM deploy artifacts)** | Small storage cost for deployment packages |
+
+Staying well under a **USD 30** reference budget is realistic if you delete the stack after rehearsals and avoid load tests.
+
+#### IAM needed for `sam deploy`
+
+The deploy user must be able to create/update the CloudFormation stack **and** either:
+
+- let SAM **create** the managed artifact bucket (`resolve_s3 = true`, requires `s3:CreateBucket` and related object ACL/policy permissions), **or**
+- set an existing bucket in `samconfig.toml` under `[default.deploy.parameters]` as `s3_bucket = "your-bucket"` and grant `s3:PutObject` on that bucket.
+
+CloudFormation, Lambda, API Gateway, DynamoDB, IAM roles, CloudWatch, Logs, and X-Ray permissions are also required for this template.
+
+#### Deploy commands
+
+```powershell
+aws sts get-caller-identity --profile observability-demo --region us-east-1
+sam build --no-cached
+sam deploy --profile observability-demo
+```
+
+If a previous bootstrap failed, delete the stack `aws-sam-cli-managed-default` when it is in `ROLLBACK_COMPLETE`, fix IAM, then deploy again.
+
 ### Resources
 
 For an introduction to the AWS SAM specification, the AWS SAM CLI, and serverless application concepts, see the [AWS SAM Developer Guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html).
@@ -857,6 +889,38 @@ Antes de desplegar:
 Los créditos promocionales, si están disponibles, no garantizan un costo cero. Las alertas de presupuesto tampoco detienen los cargos de forma automática.
 
 **No desplegar hasta revisar la infraestructura, los permisos y el presupuesto previsto.**
+
+#### Perfil de despliegue y orden de magnitud del costo
+
+| Concepto | Uso típico (ensayos + charla) |
+|---|---|
+| **Región / perfil** | `us-east-1`, perfil AWS CLI `observability-demo` (ver `samconfig.toml`) |
+| **Lambda + API Gateway** | Suele caber en free tier con cientos de solicitudes |
+| **DynamoDB bajo demanda** | Centavos con el volumen de la demo |
+| **CloudWatch Logs** | Variable principal; retención 7 días y poco tráfico suelen quedar en pocos USD |
+| **X-Ray** | Poco volumen de trazas, normalmente centavos |
+| **S3 (artefactos SAM)** | Almacenamiento pequeño de paquetes de despliegue |
+
+Quedar muy por debajo de **USD 30** de referencia es razonable si eliminas la pila tras los ensayos y evitas pruebas de carga.
+
+#### IAM necesario para `sam deploy`
+
+El usuario de despliegue debe crear/actualizar la pila de CloudFormation **y** además:
+
+- permitir que SAM **cree** el bucket gestionado (`resolve_s3 = true`, requiere `s3:CreateBucket` y permisos relacionados), **o**
+- indicar un bucket existente en `samconfig.toml` en `[default.deploy.parameters]` como `s3_bucket = "tu-bucket"` y conceder `s3:PutObject` sobre ese bucket.
+
+También hacen falta permisos para CloudFormation, Lambda, API Gateway, DynamoDB, roles IAM, CloudWatch, Logs y X-Ray según esta plantilla.
+
+#### Comandos de despliegue
+
+```powershell
+aws sts get-caller-identity --profile observability-demo --region us-east-1
+sam build --no-cached
+sam deploy --profile observability-demo
+```
+
+Si un bootstrap anterior falló, elimina la pila `aws-sam-cli-managed-default` en estado `ROLLBACK_COMPLETE`, corrige IAM y vuelve a desplegar.
 
 ### Recursos
 
