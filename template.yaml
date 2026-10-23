@@ -1,34 +1,55 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: >-
-  observability-101-with-aws
+Description: Observability 101 with AWS — serverless demo API with logs, metrics, and traces.
+
 Transform:
-- AWS::Serverless-2016-10-31
+  - AWS::Serverless-2016-10-31
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+    Runtime: nodejs24.x
+    Architectures:
+      - x86_64
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+
 Resources:
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  GetAllItemsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-getAllItems'
+      RetentionInDays: 7
 
-  # This is a Lambda function config associated with the source code: get-all-items.js
+  GetByIdLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-getById'
+      RetentionInDays: 7
+
+  PutItemLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-putItem'
+      RetentionInDays: 7
+
   getAllItemsFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-getAllItems'
       Handler: src/handlers/get-all-items.getAllItemsHandler
-      Runtime: nodejs24.x
-      Architectures:
-      - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP get method to get all items 
-        from a DynamoDB table.
+      Description: List items from DynamoDB (GET /).
+      LoggingConfig:
+        LogFormat: JSON
+        LogGroup: !Ref GetAllItemsLogGroup
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SampleTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SampleTable
       Environment:
         Variables:
-          # Make table name accessible as environment variable from function code during execution
           SAMPLE_TABLE: !Ref SampleTable
       Events:
         Api:
@@ -36,28 +57,21 @@ Resources:
           Properties:
             Path: /
             Method: GET
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
-  # This is a Lambda function config associated with the source code: get-by-id.js
   getByIdFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-getById'
       Handler: src/handlers/get-by-id.getByIdHandler
-      Runtime: nodejs24.x
-      Architectures:
-      - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP get method to get one item 
-        by id from a DynamoDB table.
+      Description: Get item by id; demo scenarios via query param scenario (GET /{id}).
+      LoggingConfig:
+        LogFormat: JSON
+        LogGroup: !Ref GetByIdLogGroup
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SampleTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SampleTable
       Environment:
         Variables:
-          # Make table name accessible as environment variable from function code during execution
           SAMPLE_TABLE: !Ref SampleTable
       Events:
         Api:
@@ -65,28 +79,21 @@ Resources:
           Properties:
             Path: /{id}
             Method: GET
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
-  # This is a Lambda function config associated with the source code: put-item.js
   putItemFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-putItem'
       Handler: src/handlers/put-item.putItemHandler
-      Runtime: nodejs24.x
-      Architectures:
-      - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP post method to add one item 
-        to a DynamoDB table.
+      Description: Create or replace an item (POST /).
+      LoggingConfig:
+        LogFormat: JSON
+        LogGroup: !Ref PutItemLogGroup
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SampleTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref SampleTable
       Environment:
         Variables:
-          # Make table name accessible as environment variable from function code during execution
           SAMPLE_TABLE: !Ref SampleTable
       Events:
         Api:
@@ -94,30 +101,116 @@ Resources:
           Properties:
             Path: /
             Method: POST
-  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
 
-  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
   SampleTable:
     Type: AWS::Serverless::SimpleTable
     Properties:
       PrimaryKey:
         Name: id
         Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 2
-        WriteCapacityUnits: 2
+
+  ObservabilityDemoSamplingRule:
+    Type: AWS::XRay::SamplingRule
+    Properties:
+      SamplingRule:
+        RuleName: !Sub '${AWS::StackName}-api-full-sample'
+        Priority: 1
+        FixedRate: 1.0
+        ReservoirSize: 5
+        ServiceName: '*'
+        ServiceType: '*'
+        Host: '*'
+        HTTPMethod: '*'
+        URLPath: '*'
+        Version: 1
+        ResourceARN: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${ServerlessRestApi}/stages/Prod'
+
+  GetByIdDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-getById-duration-high'
+      AlarmDescription: Demo signal when getById Lambda duration exceeds 2 seconds (latency scenario).
+      Namespace: AWS/Lambda
+      MetricName: Duration
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref getByIdFunction
+      ExtendedStatistic: p99
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 2000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  ObservabilityDemoDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${AWS::StackName}-observability-demo'
+      DashboardBody: !Sub
+        - |
+          {
+            "widgets": [
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 0,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                  "title": "getById invocations",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "AWS/Lambda", "Invocations", "FunctionName", "${GetByIdFunctionName}", { "stat": "Sum" } ]
+                  ],
+                  "period": 60
+                }
+              },
+              {
+                "type": "metric",
+                "x": 8,
+                "y": 0,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                  "title": "getById errors",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "AWS/Lambda", "Errors", "FunctionName", "${GetByIdFunctionName}", { "stat": "Sum" } ]
+                  ],
+                  "period": 60
+                }
+              },
+              {
+                "type": "metric",
+                "x": 16,
+                "y": 0,
+                "width": 8,
+                "height": 6,
+                "properties": {
+                  "title": "getById duration (ms)",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "AWS/Lambda", "Duration", "FunctionName", "${GetByIdFunctionName}", { "stat": "Average" } ],
+                    [ ".", ".", ".", ".", { "stat": "Maximum" } ]
+                  ],
+                  "period": 60
+                }
+              }
+            ]
+          }
+        - GetByIdFunctionName: !Ref getByIdFunction
 
 Outputs:
   WebEndpoint:
     Description: API Gateway endpoint URL for Prod stage
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/"
-# # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Tracing: Active
-    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
-    LoggingConfig:
-      LogFormat: JSON
-  Api:
-    TracingEnabled: true
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/'
+  ObservabilityDashboardName:
+    Description: CloudWatch dashboard for the live demo
+    Value: !Ref ObservabilityDemoDashboard
+  GetByIdDurationAlarmName:
+    Description: CloudWatch alarm for elevated getById duration
+    Value: !Ref GetByIdDurationAlarm
+  GetByIdFunctionName:
+    Description: Lambda function used for scenario=error and scenario=latency
+    Value: !Ref getByIdFunction
