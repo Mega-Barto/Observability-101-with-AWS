@@ -121,15 +121,23 @@ Traces follow one request across the instrumented components. With AWS X-Ray, th
 
 ### Demo scenarios
 
-The application should reproduce three controlled situations:
+Use **`GET /{id}`** with the query parameter **`scenario`**. Seed data with **`POST /`** first. Local invoke examples live under [`events/`](events/) (`event-get-by-id-scenario-*.json`).
 
-1. **Normal operation.** Send requests and observe the expected API behavior.
-2. **Controlled error.** Trigger a reproducible failure and identify the evidence it leaves in logs, metrics, and the available traces.
-3. **Artificial latency.** Introduce a deliberate delay and see how it appears in request duration and in the traces.
+| Scenario | Request | HTTP result | What to look for |
+|---|---|---|---|
+| **Normal** | `GET /{id}` or `?scenario=normal` | `200` + item JSON | Structured log with `scenario: "normal"`; X-Ray shows Lambda and DynamoDB |
+| **Controlled error** | `GET /{id}?scenario=error` | `502` from API Gateway (failed invocation) | CloudWatch log with `message: "controlled demo failure"`; Lambda **Errors** metric |
+| **Artificial latency** | `GET /{id}?scenario=latency` | `200` after ~2.5 s | Log with `scenario: "latency"`; **Duration** metric; X-Ray subsegment `demo-artificial-latency` |
 
-Each scenario poses an investigation question, collects evidence, and separates conclusions that the signals support from conclusions that still need further checks.
+Example (replace `{WebEndpoint}` and `{id}` after deploy):
 
-Instrumentation and the final behavior of these scenarios must be validated before the demonstration is deployed. They are not implemented in the current handlers yet.
+```bash
+curl "{WebEndpoint}{id}"
+curl "{WebEndpoint}{id}?scenario=error"
+curl "{WebEndpoint}{id}?scenario=latency"
+```
+
+Each scenario poses an investigation question, collects evidence, and separates conclusions that the signals support from conclusions that still need further checks. Validate these signals in AWS after deploy; X-Ray may sample requests unless a 100% sampling rule is configured (planned in the SAM template).
 
 ### Talk outline
 
@@ -549,15 +557,23 @@ Las trazas permiten seguir una solicitud a través de los componentes instrument
 
 ### Escenarios de demostración
 
-La aplicación deberá permitir reproducir tres situaciones controladas:
+Usa **`GET /{id}`** con el parámetro de consulta **`scenario`**. Carga datos de ejemplo con **`POST /`** antes. Los eventos para invocación local están en [`events/`](events/) (`event-get-by-id-scenario-*.json`).
 
-1. **Funcionamiento normal.** Ejecutar solicitudes y observar el comportamiento esperado de la API.
-2. **Error controlado.** Provocar un fallo reproducible e identificar las evidencias que deja en los logs, las métricas y las trazas disponibles.
-3. **Latencia artificial.** Introducir un retraso deliberado y analizar cómo se refleja en la duración de las solicitudes y en las trazas.
+| Escenario | Solicitud | Resultado HTTP | Señal a revisar |
+|---|---|---|---|
+| **Normal** | `GET /{id}` o `?scenario=normal` | `200` + JSON del ítem | Log estructurado con `scenario: "normal"`; X-Ray con Lambda y DynamoDB |
+| **Error controlado** | `GET /{id}?scenario=error` | `502` en API Gateway (invocación fallida) | Log en CloudWatch con `message: "controlled demo failure"`; métrica **Errors** de Lambda |
+| **Latencia artificial** | `GET /{id}?scenario=latency` | `200` tras ~2,5 s | Log con `scenario: "latency"`; métrica **Duration**; subsegmento X-Ray `demo-artificial-latency` |
 
-Cada escenario sirve para formular una pregunta de investigación, recopilar evidencia y separar las conclusiones que las señales sustentan de las que aún requieren comprobaciones adicionales.
+Ejemplo (sustituye `{WebEndpoint}` e `{id}` tras el despliegue):
 
-La instrumentación y el comportamiento definitivos de estos escenarios deben validarse antes de desplegar la demostración. Todavía no están implementados en los handlers actuales.
+```bash
+curl "{WebEndpoint}{id}"
+curl "{WebEndpoint}{id}?scenario=error"
+curl "{WebEndpoint}{id}?scenario=latency"
+```
+
+Cada escenario sirve para formular una pregunta de investigación, recopilar evidencia y separar las conclusiones que las señales sustentan de las que aún requieren comprobaciones adicionales. Valida las señales en AWS después del despliegue; X-Ray puede muestrear solicitudes salvo que configures una regla al 100 % (previsto en la plantilla SAM).
 
 ### Guion de la charla
 
