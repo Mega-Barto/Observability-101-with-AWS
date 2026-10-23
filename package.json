@@ -1,6 +1,6 @@
 {
-    "name": "delete-test-01",
-    "description": "delete-test-01-description",
+    "name": "observability-101-with-aws",
+    "description": "Serverless demo app for Observability 101 with AWS (logs, metrics, traces).",
     "version": "0.0.1",
     "private": true,
     "dependencies": {
@@ -24,6 +24,10 @@
         "moduleFileExtensions": [
             "mjs",
             "js"
+        ],
+        "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/.aws-sam/"
         ]
     }
 }
