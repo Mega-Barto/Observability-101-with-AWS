@@ -399,11 +399,23 @@ pnpm test
 
 ### Cleanup
 
-To delete the sample application that you created, use the AWS SAM CLI. If you used the project name for the stack name, you can run:
+After rehearsals or the talk, remove the deployed application so API Gateway, Lambda, DynamoDB, CloudWatch dashboard/alarm, and X-Ray sampling rule stop accruing charges. Budget alerts (for example `observability-101-budget`) notify you about spend; they do **not** delete resources.
 
-```bash
-sam delete --stack-name observability-101-with-aws
+Use the same profile and region as deploy (`samconfig.toml`):
+
+```powershell
+sam delete --stack-name observability-101-with-aws --profile observability-demo --region us-east-1
 ```
+
+Confirm the prompts when SAM lists the resources it will delete. When the command finishes, open **CloudFormation** in `us-east-1` and verify that stack `observability-101-with-aws` is gone.
+
+**What `sam delete` removes:** resources defined in this project’s CloudFormation stack (functions, API, table, log groups created by the stack, dashboard, alarm, sampling rule).
+
+**What it does not remove:** the SAM artifact bucket configured in `samconfig.toml` (`observability-demo-sam-artifacts-983291234439` if you use the documented setup). Empty or delete that bucket separately in **S3** if you no longer need deployment packages.
+
+**After cleanup:** in **Billing → Cost Explorer** (or your budget `observability-101-budget`), confirm costs level off; allow up to 24 hours for final usage lines to appear.
+
+Optional dry run before the session: deploy, validate scenarios, run `sam delete`, then deploy again when you are ready for the live demo.
 
 ### Costs and security
 
@@ -867,11 +879,23 @@ pnpm test
 
 ### Limpieza
 
-Para eliminar la aplicación de ejemplo, usa la AWS SAM CLI. Si usaste el nombre del proyecto como nombre de la pila:
+Tras los ensayos o la charla, elimina la aplicación desplegada para que dejen de generarse cargos en API Gateway, Lambda, DynamoDB, el dashboard/alarma de CloudWatch y la regla de muestreo de X-Ray. Las alertas de presupuesto (por ejemplo `observability-101-budget`) avisan del gasto; **no** borran recursos.
 
-```bash
-sam delete --stack-name observability-101-with-aws
+Usa el mismo perfil y región que en el despliegue (`samconfig.toml`):
+
+```powershell
+sam delete --stack-name observability-101-with-aws --profile observability-demo --region us-east-1
 ```
+
+Confirma las preguntas cuando SAM muestre qué recursos eliminará. Al terminar, abre **CloudFormation** en `us-east-1` y comprueba que la pila `observability-101-with-aws` ya no exista.
+
+**Qué quita `sam delete`:** recursos de la pila de CloudFormation de este proyecto (funciones, API, tabla, log groups creados por la pila, dashboard, alarma, regla de muestreo).
+
+**Qué no quita:** el bucket de artefactos SAM de `samconfig.toml` (`observability-demo-sam-artifacts-983291234439` si usas la configuración documentada). Vacíalo o bórralo aparte en **S3** si ya no necesitas paquetes de despliegue.
+
+**Después de limpiar:** en **Billing → Cost Explorer** (o tu budget `observability-101-budget`), revisa que el gasto se estabilice; los cargos finales pueden tardar hasta 24 h en reflejarse.
+
+Opcional antes del evento: despliega, valida escenarios, ejecuta `sam delete` y vuelve a desplegar cuando quieras la demo en vivo.
 
 ### Costos y seguridad
 
