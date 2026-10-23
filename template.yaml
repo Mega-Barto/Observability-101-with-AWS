@@ -44,7 +44,7 @@ Resources:
       Description: List items from DynamoDB (GET /).
       LoggingConfig:
         LogFormat: JSON
-        LogGroup: !Ref GetAllItemsLogGroup
+        LogGroup: !Sub '/aws/lambda/${AWS::StackName}-getAllItems'
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref SampleTable
@@ -66,7 +66,7 @@ Resources:
       Description: Get item by id; demo scenarios via query param scenario (GET /{id}).
       LoggingConfig:
         LogFormat: JSON
-        LogGroup: !Ref GetByIdLogGroup
+        LogGroup: !Sub '/aws/lambda/${AWS::StackName}-getById'
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref SampleTable
@@ -88,7 +88,7 @@ Resources:
       Description: Create or replace an item (POST /).
       LoggingConfig:
         LogFormat: JSON
-        LogGroup: !Ref PutItemLogGroup
+        LogGroup: !Sub '/aws/lambda/${AWS::StackName}-putItem'
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref SampleTable
@@ -113,7 +113,7 @@ Resources:
     Type: AWS::XRay::SamplingRule
     Properties:
       SamplingRule:
-        RuleName: !Sub '${AWS::StackName}-api-full-sample'
+        RuleName: obs101-demo-api-100pct
         Priority: 1
         FixedRate: 1.0
         ReservoirSize: 5
