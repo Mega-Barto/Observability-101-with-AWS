@@ -221,12 +221,12 @@ From the repository root. These commands do not deploy the application.
 ```powershell
 sam validate
 sam build
-npm test
+pnpm test
 ```
 
 - `sam validate` checks the SAM template.
 - `sam build` prepares the build artifacts. The SAM CLI installs the dependencies defined in `package.json`, creates a deployment package, and saves it in `.aws-sam/build`.
-- `npm test` runs the unit tests. The test script is defined in `package.json` and uses [Jest](https://jestjs.io/). Install dependencies first with `npm install` if `node_modules` is missing.
+- `pnpm test` runs the unit tests. The test script is defined in `package.json` and uses [Jest](https://jestjs.io/). Install dependencies first with `pnpm install` if `node_modules` is missing.
 
 Verify the test result before treating the project as ready for the presentation.
 
@@ -382,11 +382,11 @@ You can find more information and examples about filtering Lambda function logs 
 
 ### Unit tests
 
-Tests are defined in the `__tests__` folder. Use npm to install Jest and run the unit tests.
+Tests are defined in the `__tests__` folder. Use pnpm to install dependencies and run the unit tests.
 
 ```bash
-npm install
-npm test
+pnpm install
+pnpm test
 ```
 
 ### Cleanup
@@ -649,12 +649,12 @@ Desde la raíz del repositorio. Estos comandos no despliegan la aplicación.
 ```powershell
 sam validate
 sam build
-npm test
+pnpm test
 ```
 
 - `sam validate` valida la plantilla SAM.
 - `sam build` prepara los artefactos de construcción. La SAM CLI instala las dependencias definidas en `package.json`, crea el paquete de despliegue y lo guarda en `.aws-sam/build`.
-- `npm test` ejecuta las pruebas unitarias. El script está definido en `package.json` y usa [Jest](https://jestjs.io/). Si falta `node_modules`, instala las dependencias antes con `npm install`.
+- `pnpm test` ejecuta las pruebas unitarias. El script está definido en `package.json` y usa [Jest](https://jestjs.io/). Si falta `node_modules`, instala las dependencias antes con `pnpm install`.
 
 El resultado de las pruebas debe verificarse antes de considerar listo el proyecto para la presentación.
 
@@ -810,11 +810,11 @@ Hay más información y ejemplos de filtrado en la [documentación de la AWS SAM
 
 ### Pruebas unitarias
 
-Las pruebas están en la carpeta `__tests__`. Usa npm para instalar Jest y ejecutarlas.
+Las pruebas están en la carpeta `__tests__`. Usa pnpm para instalar dependencias y ejecutarlas.
 
 ```bash
-npm install
-npm test
+pnpm install
+pnpm test
 ```
 
 ### Limpieza
