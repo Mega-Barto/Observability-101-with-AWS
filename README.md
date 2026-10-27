@@ -119,6 +119,36 @@ Traces follow one request across the instrumented components. With AWS X-Ray, th
 
 > Logs add context, metrics show behavior patterns, and traces help locate where to investigate. Each signal answers a different question.
 
+### Why it matters
+
+A request in this app crosses API Gateway, Lambda, and DynamoDB. There is no single local log where the cause “lives.”
+
+- An alarm says that something changed. Logs and traces shorten the time spent guessing where to look.
+- Runtime quality sees real data, load, and dependencies that an isolated test does not cover.
+- Development, QA, and operations can discuss the same request, the same metric, and the same trace.
+
+### Code shown in the talk
+
+The deck leaves three slots for [Carbon](https://carbon.now.sh) images. Generate them from these ranges in [`template.yaml`](template.yaml). Do not deploy during the talk.
+
+| Fragment | Lines | What it shows |
+|---|---|---|
+| `Globals` | **7–18** | `Tracing: Active`, JSON logs, and API `TracingEnabled: true` |
+| Log groups and `getByIdFunction` | **21–37** and **61–81** | **7-day** retention and the demo function’s log group |
+| Sampling rule and alarm | **112–144** | X-Ray `FixedRate: 1.0` (demo only) and the Duration p99 alarm above 2000 ms |
+
+### Practices and next steps
+
+Practices this demo is meant to copy with judgment:
+
+- JSON logs with request context, and without secrets or full payloads.
+- Short retention for rehearsals (7 days in the template).
+- An alarm whose threshold someone will actually look at.
+- 100% trace sampling only for the demo.
+- `sam delete` when the rehearsal is over.
+
+Next step on a service you already run: one structured log, one metric, and one useful trace; a minimal dashboard and one actionable alarm; then Cost Explorer grouped by service. Production sampling, retention, SLOs, and OpenTelemetry are follow-up topics.
+
 ### Demo scenarios
 
 Use **`GET /{id}`** with the query parameter **`scenario`**. Seed data with **`POST /`** first. Local invoke examples live under [`events/`](events/) (`event-get-by-id-scenario-*.json`).
@@ -146,10 +176,10 @@ Total time: **30 minutes**.
 | Block | Time | Content |
 |---|---:|---|
 | Hook | 3 min | An API looks healthy and still has abnormal latency. How do we find the cause without reading all of the code? |
-| Context | 5 min | Observability, its three pillars, and the difference between monitoring and investigating. |
-| Main content | 5 min | Serverless architecture, observability services, and the link to software quality. |
+| Context | 5 min | Why observability matters, its three pillars, and the difference between monitoring and investigating. |
+| Main content | 5 min | Serverless architecture, the `template.yaml` fragments that emit signals, and the link to software quality. |
 | Live demo | 12 min | Normal requests, a controlled error or latency, then logs, metrics, and traces. |
-| Conclusions | 2 min | Key takeaways and how observability applies to software quality. |
+| Conclusions | 2 min | Takeaways, practices, and a concrete next step before questions. |
 | Q&A | 3 min | Questions and practical uses. |
 
 #### Live demo flow
@@ -178,6 +208,7 @@ A successful HTTP response still has to be checked against the expected business
 
 ### Presentation prerequisites
 
+- Step-by-step runbook with speaker notes: [docs/live-demo-runbook.md](docs/live-demo-runbook.md).
 - Application deployed and validated in AWS before the session.
 - Access to the API endpoints.
 - Read permissions for logs, metrics, dashboards, and traces.
@@ -447,6 +478,19 @@ Promotional credits, when available, are not a guarantee of zero cost. Budget al
 
 Staying well under a **USD 30** reference budget is realistic if you delete the stack after rehearsals and avoid load tests.
 
+#### How to measure it
+
+Use **Billing → Cost Explorer**, last 7 days, grouped by **Service**. On an account that only runs this demo, read these lines:
+
+| Service | What moves the number in this project |
+|---|---|
+| **CloudWatch** | Main variable. Log **ingestion** and **storage**. Retention is 7 days (`template.yaml` lines 25, 31, and 37). One dashboard and one alarm add a small fixed charge. |
+| **X-Ray** | Recorded traces. The demo rule `obs101-demo-api-100pct` sets `FixedRate: 1.0` (lines 112–126). That is for the talk. Do not copy 100% sampling to production. |
+| **Lambda, API Gateway, DynamoDB** | Hundreds of demo requests usually stay inside the free tier or in cents. On-demand DynamoDB at this volume is cents. |
+| **S3** | SAM artifact bucket. `sam delete` does **not** remove it. |
+
+Cost Explorer can lag up to **24 hours**, so compare a reading from before the first deploy with one taken a day after `sam delete`. The budget `observability-101-budget` notifies you. It does not stop resources or guarantee a zero bill. Published unit prices change; confirm them on the [CloudWatch pricing](https://aws.amazon.com/cloudwatch/pricing/) and [X-Ray pricing](https://aws.amazon.com/xray/pricing/) pages before you treat a rehearsal as “free.”
+
 #### IAM needed for `sam deploy`
 
 The deploy user must be able to create/update the CloudFormation stack **and** either:
@@ -599,6 +643,36 @@ Las trazas permiten seguir una solicitud a través de los componentes instrument
 
 > Los logs aportan contexto, las métricas muestran patrones de comportamiento y las trazas ayudan a localizar dónde investigar. Cada señal responde una pregunta distinta.
 
+### Por qué importa
+
+En esta app una petición cruza API Gateway, Lambda y DynamoDB. No hay un log local único donde “esté” la causa.
+
+- Una alarma dice que algo cambió. Los logs y las trazas acortan el tiempo a ciegas.
+- La calidad en ejecución ve datos, carga y dependencias que un test aislado no cubre.
+- Desarrollo, QA y operaciones pueden discutir el mismo request, la misma métrica y la misma traza.
+
+### Código que se muestra en la charla
+
+El deck deja tres espacios para imágenes de [Carbon](https://carbon.now.sh). Generarlas desde estos rangos de [`template.yaml`](template.yaml). Durante la charla no se despliega.
+
+| Fragmento | Líneas | Qué muestra |
+|---|---|---|
+| `Globals` | **7–18** | `Tracing: Active`, logs JSON y `TracingEnabled: true` en la API |
+| Log groups y `getByIdFunction` | **21–37** y **61–81** | Retención de **7 días** y el log group de la función de la demo |
+| Regla de muestreo y alarma | **112–144** | X-Ray `FixedRate: 1.0` (solo demo) y alarma de Duration p99 por encima de 2000 ms |
+
+### Prácticas y próximos pasos
+
+Prácticas que esta demo invita a copiar con criterio:
+
+- Logs JSON con contexto de la request, sin secretos ni cuerpos completos.
+- Retención corta en ensayos (7 días en la plantilla).
+- Una alarma cuyo umbral alguien va a revisar.
+- Muestreo de trazas al 100 % solo durante la demo.
+- `sam delete` al terminar el ensayo.
+
+Siguiente paso en un servicio que ya operas: un log estructurado, una métrica y una traza útil; un dashboard mínimo y una alarma accionable; después Cost Explorer agrupado por servicio. Sampling y retención de producción, SLO y OpenTelemetry quedan como temas posteriores.
+
 ### Escenarios de demostración
 
 Usa **`GET /{id}`** con el parámetro de consulta **`scenario`**. Carga datos de ejemplo con **`POST /`** antes. Los eventos para invocación local están en [`events/`](events/) (`event-get-by-id-scenario-*.json`).
@@ -626,10 +700,10 @@ Duración total: **30 minutos**.
 | Bloque | Duración | Contenido |
 |---|---:|---|
 | Hook | 3 min | Una API parece funcionar bien y, aun así, tiene una latencia anormal. ¿Cómo encontrar la causa sin revisar todo el código? |
-| Contexto | 5 min | Introducción a la observabilidad, sus tres pilares y la diferencia entre monitorizar e investigar. |
-| Contenido principal | 5 min | Arquitectura serverless, servicios de observabilidad y relación con la calidad del software. |
+| Contexto | 5 min | Por qué importa la observabilidad, sus tres pilares y la diferencia entre monitorizar e investigar. |
+| Contenido principal | 5 min | Arquitectura serverless, fragmentos de `template.yaml` que emiten señales y relación con la calidad del software. |
 | Demo en vivo | 12 min | Solicitudes normales, error o latencia controlada, y análisis de logs, métricas y trazas. |
-| Conclusiones | 2 min | Aprendizajes clave y aplicación de la observabilidad a la calidad del software. |
+| Conclusiones | 2 min | Aprendizajes, prácticas y un siguiente paso concreto, antes de las preguntas. |
 | Q&A | 3 min | Preguntas y discusión sobre aplicaciones prácticas. |
 
 #### Flujo de la demostración en vivo
@@ -658,6 +732,7 @@ Una respuesta HTTP exitosa todavía debe contrastarse con el resultado de negoci
 
 ### Prerrequisitos para la presentación
 
+- Guion operativo paso a paso con notas de presentación: [docs/live-demo-runbook.md](docs/live-demo-runbook.md).
 - Aplicación desplegada y validada en AWS antes de la sesión.
 - Acceso a los endpoints de la API.
 - Permisos de lectura para consultar logs, métricas, dashboards y trazas.
@@ -926,6 +1001,19 @@ Los créditos promocionales, si están disponibles, no garantizan un costo cero.
 | **S3 (artefactos SAM)** | Almacenamiento pequeño de paquetes de despliegue |
 
 Quedar muy por debajo de **USD 30** de referencia es razonable si eliminas la pila tras los ensayos y evitas pruebas de carga.
+
+#### Cómo medirlo
+
+Usa **Billing → Cost Explorer**, últimos 7 días, agrupado por **servicio**. En una cuenta que solo corre esta demo, lee estas líneas:
+
+| Servicio | Qué mueve la cifra en este proyecto |
+|---|---|
+| **CloudWatch** | Variable principal. **Ingesta** y **almacenamiento** de logs. La retención es de 7 días (`template.yaml`, líneas 25, 31 y 37). Un dashboard y una alarma suman un cargo fijo pequeño. |
+| **X-Ray** | Trazas registradas. La regla `obs101-demo-api-100pct` pone `FixedRate: 1.0` (líneas 112–126). Sirve para la charla. No copies el muestreo al 100 % a producción. |
+| **Lambda, API Gateway, DynamoDB** | Cientos de requests de demo suelen quedar en free tier o en centavos. DynamoDB bajo demanda, a este volumen, son centavos. |
+| **S3** | Bucket de artefactos SAM. `sam delete` **no** lo elimina. |
+
+Cost Explorer puede tardar hasta **24 horas**. Compara una lectura de antes del primer despliegue con otra al día siguiente de `sam delete`. El budget `observability-101-budget` avisa. No detiene recursos ni garantiza costo cero. Los precios unitarios publicados cambian; confírmalos en las páginas de [precios de CloudWatch](https://aws.amazon.com/cloudwatch/pricing/) y de [precios de X-Ray](https://aws.amazon.com/xray/pricing/) antes de dar un ensayo por gratuito.
 
 #### IAM necesario para `sam deploy`
 

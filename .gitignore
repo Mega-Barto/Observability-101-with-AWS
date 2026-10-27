@@ -25,6 +25,9 @@ yarn-error.log*
 env.local.json
 samconfig.toml.local
 
+# Extracted third-party slide assets (local only)
+.tmp-pptx/
+
 # OS-generated files
 .DS_Store
 Thumbs.db

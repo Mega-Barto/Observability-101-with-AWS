@@ -1,0 +1,2735 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From Bug to Insight · AWS User Group Pereira</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&family=Tektur:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* AWS UG — marca (logo) vs UI (presentación legible) */
+      --ug-ink: #151D25;
+      --ug-purple-brand: #A166FF;
+      --ug-purple: #8B72C4;
+      --ug-magenta: #B078B8;
+      --ug-blue: #6BA3D4;
+      --ug-green: #5BB896;
+      --ug-orange: #D4925A;
+      --ug-purple-soft: #F2EFF8;
+      --ug-blue-soft: #EDF1F6;
+      --ug-magenta-soft: #F5F0F5;
+      --text-on-dark: #F2F5F9;
+      --text-on-dark-muted: rgba(242, 245, 249, 0.88);
+      --text-on-light: rgba(21, 29, 37, 0.92);
+      --text-on-light-muted: rgba(21, 29, 37, 0.78);
+      /* 8-Bit Orbit tokens → acentos suaves */
+      --neon-pink: var(--ug-magenta);
+      --neon-cyan: var(--ug-blue);
+      --neon-yellow: var(--ug-orange);
+      --deep-navy: var(--ug-ink);
+      --dark-void: #151D25;
+      --soft-lavender: var(--ug-purple-soft);
+      --pixel-size: 4px;
+      --type-body: clamp(1.15rem, 1.65vw, 1.5rem);
+      --type-body-sm: clamp(1rem, 1.35vw, 1.2rem);
+      --font-display: 'Tektur', cursive;
+      --font-body: 'Chakra Petch', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font-body);
+      color: var(--dark-void);
+      background: var(--dark-void);
+    }
+
+    /* Scroll behavior for slide navigation */
+    .deck {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slides-container {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .slide {
+      width: 100%;
+      height: 100vh;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 96px 4vw 108px;
+    }
+
+    /* === GLOBAL ATMOSPHERIC OVERLAYS === */
+
+    /* Scanlines */
+    .scanlines::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 2px,
+        rgba(16, 24, 32, 0.04) 2px,
+        rgba(16, 24, 32, 0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 50;
+      mix-blend-mode: multiply;
+    }
+
+    /* Grain / Noise */
+    .grain::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.022;
+      pointer-events: none;
+      z-index: 49;
+    }
+
+    /* CRT vignette glow */
+    .crt-glow::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(16, 24, 32, 0.28) 100%);
+      pointer-events: none;
+      z-index: 51;
+    }
+
+    /* Pixel grid background pattern */
+    .bg-grid {
+      background-color: var(--dark-void);
+      background-image:
+        linear-gradient(rgba(107, 163, 212, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 114, 196, 0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .bg-grid-pink {
+      background-color: var(--ug-magenta-soft);
+      background-image:
+        linear-gradient(rgba(21, 29, 37, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21, 29, 37, 0.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .bg-grid-cyan {
+      background-color: var(--ug-blue-soft);
+      background-image:
+        linear-gradient(rgba(21, 29, 37, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21, 29, 37, 0.08) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .bg-grid-lavender {
+      background-color: var(--soft-lavender);
+      background-image:
+        linear-gradient(rgba(21, 29, 37, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21, 29, 37, 0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* Moving starfield for dark slides */
+    .starfield {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .starfield .star {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--neon-cyan);
+      opacity: 0.28;
+      animation: twinkle 3s infinite ease-in-out;
+    }
+
+    .starfield .star:nth-child(2n) { background: var(--ug-purple); }
+    .starfield .star:nth-child(3n) { background: var(--neon-pink); }
+    .starfield .star:nth-child(4n) { width: 6px; height: 6px; background: var(--neon-yellow); }
+    .starfield .star:nth-child(5n) { background: var(--ug-green); }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.15); }
+    }
+
+    /* Floating pixel particles */
+    .pixel-particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .pixel-particles .p {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      opacity: 0.18;
+      animation: float 8s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-30px) rotate(90deg); }
+    }
+
+    /* === PIXEL UI COMPONENTS === */
+
+    /* Pixel border effect */
+    .pixel-box {
+      position: relative;
+      background: var(--deep-navy);
+      color: white;
+    }
+
+    .pixel-box::before {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      background: var(--neon-cyan);
+      z-index: -1;
+      clip-path: polygon(
+        0 4px, 4px 4px, 4px 0,
+        calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+        100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+        4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+      );
+    }
+
+    .pixel-box.yellow::before { background: var(--neon-yellow); }
+    .pixel-box.pink::before { background: var(--neon-pink); }
+
+    /* Pixel button */
+    a.pixel-btn { text-decoration: none; }
+    .pixel-btn {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 16px 36px;
+      background: var(--neon-cyan);
+      color: var(--deep-navy);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      box-shadow:
+        4px 0 0 0 var(--deep-navy),
+        0 4px 0 0 var(--deep-navy),
+        4px 4px 0 0 var(--deep-navy),
+        8px 4px 0 0 var(--neon-yellow),
+        4px 8px 0 0 var(--neon-yellow),
+        8px 8px 0 0 var(--neon-yellow);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .pixel-btn:hover {
+      transform: translate(2px, 2px);
+      box-shadow:
+        2px 0 0 0 var(--deep-navy),
+        0 2px 0 0 var(--deep-navy),
+        2px 2px 0 0 var(--deep-navy),
+        4px 2px 0 0 var(--neon-yellow),
+        2px 4px 0 0 var(--neon-yellow),
+        4px 4px 0 0 var(--neon-yellow);
+    }
+
+    .pixel-btn.pink-btn {
+      background: var(--neon-pink);
+      box-shadow:
+        4px 0 0 0 var(--deep-navy),
+        0 4px 0 0 var(--deep-navy),
+        4px 4px 0 0 var(--deep-navy),
+        8px 4px 0 0 var(--neon-cyan),
+        4px 8px 0 0 var(--neon-cyan),
+        8px 8px 0 0 var(--neon-cyan);
+    }
+
+    /* Pixel text shadow like the reference image */
+    .pixel-hero-text {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(3.2rem, 10vw, 7.5rem);
+      line-height: 1.05;
+      color: var(--text-on-dark);
+      text-shadow:
+        3px 3px 0 rgba(139, 114, 196, 0.55),
+        6px 6px 0 rgba(21, 29, 37, 0.85);
+      letter-spacing: 0.03em;
+    }
+
+    /* Decorative pixel corners */
+    .pixel-corners {
+      position: relative;
+    }
+
+    .pixel-corners::before,
+    .pixel-corners::after {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 4px solid var(--neon-cyan);
+    }
+
+    .pixel-corners::before {
+      top: -8px;
+      left: -8px;
+      border-right: none;
+      border-bottom: none;
+    }
+
+    .pixel-corners::after {
+      bottom: -8px;
+      right: -8px;
+      border-left: none;
+      border-top: none;
+    }
+
+    .pixel-corners.yellow-corners::before,
+    .pixel-corners.yellow-corners::after { border-color: var(--neon-yellow); }
+
+    .pixel-corners.pink-corners::before,
+    .pixel-corners.pink-corners::after { border-color: var(--neon-pink); }
+
+    /* Section labels */
+    .pixel-label {
+      font-family: var(--font-mono);
+      font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #E8DCC8;
+      background: var(--deep-navy);
+      padding: 8px 16px;
+      display: inline-block;
+      margin-bottom: 1.5rem;
+    }
+
+    /* === SLIDE CONTENT LAYOUTS === */
+
+    .slide-content {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    h1 { font-size: clamp(2.4rem, 5.5vw, 4.5rem); }
+    h2 { font-size: clamp(1.85rem, 4vw, 3.25rem); }
+    h3 { font-size: clamp(1.35rem, 2.4vw, 1.85rem); }
+    p, li {
+      font-family: var(--font-body);
+      font-size: var(--type-body);
+      line-height: 1.65;
+      font-weight: 500;
+    }
+
+    .slide:not(.light-chrome) .slide-content p,
+    .slide:not(.light-chrome) .slide-content li,
+    .slide:not(.light-chrome) .quote-text {
+      color: var(--text-on-dark-muted);
+    }
+    .slide:not(.light-chrome) .slide-content h2,
+    .slide:not(.light-chrome) .slide-content h3 {
+      color: var(--text-on-dark);
+    }
+    .slide.light-chrome .slide-content p,
+    .slide.light-chrome .slide-content li {
+      color: var(--text-on-light);
+    }
+
+    /* === NAVIGATION === */
+    .nav-dots {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border: 2px solid rgba(107, 163, 212, 0.55);
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .nav-dot::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      background: rgba(184, 212, 238, 0.85);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .nav-dot.active {
+      transform: scale(1.35);
+      border-color: rgba(212, 146, 90, 0.85);
+      box-shadow: 0 0 0 3px rgba(212, 146, 90, 0.18);
+    }
+    .nav-dot.active::after { opacity: 1; }
+    .nav-dot:hover { border-color: rgba(212, 146, 90, 0.7); }
+
+    .slide-counter {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--text-on-dark-muted);
+      background: rgba(16, 24, 32, 0.8);
+      padding: 8px 20px;
+      z-index: 100;
+      letter-spacing: 0.15em;
+    }
+    .slide-counter.tick {
+      animation: counter-tick 0.35s ease;
+    }
+    @keyframes counter-tick {
+      0% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes deck-fade-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .reveal:not(.is-visible) {
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+    }
+    .reveal.is-visible {
+      animation: deck-fade-up 0.45s ease-out both;
+    }
+    .reveal-flow:not(.is-visible) {
+      display: none;
+    }
+    tr.reveal.is-visible {
+      display: table-row;
+    }
+    .tier-card.featured.reveal.is-visible {
+      animation: deck-fade-up-featured 0.45s ease-out both;
+    }
+    @keyframes deck-fade-up-featured {
+      from { opacity: 0; transform: translateY(2px); }
+      to { opacity: 1; transform: translateY(-12px); }
+    }
+    .deck[data-more="1"] { cursor: pointer; }
+
+    /* === CUSTOM CURSOR AREA === */
+    .deck {
+      cursor: crosshair;
+    }
+
+    /* === SPECIFIC SLIDE STYLES === */
+
+    /* Slide 1: Hero */
+    .hero-subtitle {
+      font-family: var(--font-mono);
+      font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+      letter-spacing: 0.12em;
+      color: #C9B8E8;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-tagline {
+      font-family: var(--font-body);
+      font-size: clamp(1.15rem, 1.75vw, 1.45rem);
+      color: var(--text-on-dark-muted);
+      max-width: 640px;
+      text-align: center;
+      margin-top: 2rem;
+      line-height: 1.8;
+    }
+
+    .hero-badges {
+      display: flex;
+      gap: 16px;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .hero-badge {
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1vw, 1rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      border: 2px solid rgba(242, 245, 249, 0.45);
+      color: var(--text-on-dark);
+    }
+
+    /* Slide 2: Split Intro */
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4vw;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      max-width: 1100px;
+    }
+
+    @media (max-width: 768px) {
+      .split-layout { grid-template-columns: 1fr; }
+    }
+
+    .pixel-avatar-zone {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 380px;
+      margin: 0 auto;
+      background: var(--deep-navy);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pixel-avatar-zone::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 10px,
+          rgba(65, 179, 255, 0.1) 10px,
+          rgba(65, 179, 255, 0.1) 20px
+        );
+    }
+
+    .pixel-face {
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+
+    .pixel-face .eye {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: var(--neon-cyan);
+      top: 30px;
+    }
+
+    .pixel-face .eye.left { left: 16px; }
+    .pixel-face .eye.right { right: 16px; }
+
+    .pixel-face .mouth {
+      position: absolute;
+      width: 60px;
+      height: 16px;
+      background: var(--neon-pink);
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Slide 3: Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    @media (max-width: 900px) {
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 500px) {
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+      border: 2px solid rgba(21, 29, 37, 0.2);
+    }
+
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: 16px;
+      height: 16px;
+      border-top: 4px solid var(--deep-navy);
+      border-left: 4px solid var(--deep-navy);
+    }
+
+    .feature-card::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 16px;
+      height: 16px;
+      border-bottom: 4px solid var(--deep-navy);
+      border-right: 4px solid var(--deep-navy);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      position: relative;
+    }
+
+    .feature-icon.cube {
+      background: var(--deep-navy);
+      box-shadow: 6px 6px 0 var(--neon-yellow);
+    }
+
+    .feature-icon.diamond {
+      background: var(--neon-cyan);
+      transform: rotate(45deg);
+      width: 36px;
+      height: 36px;
+      margin-bottom: 22px;
+      margin-top: 6px;
+    }
+
+    .feature-icon.cross {
+      background: var(--neon-pink);
+      position: relative;
+    }
+
+    .feature-icon.cross::before,
+    .feature-icon.cross::after {
+      content: "";
+      position: absolute;
+      background: var(--deep-navy);
+    }
+
+    .feature-icon.cross::before { inset: 10px 4px; }
+    .feature-icon.cross::after { inset: 4px 10px; }
+
+    .feature-icon.circle {
+      border: 6px solid var(--neon-yellow);
+      border-radius: 0; /* pixel circle = square with careful shading? actually keep square for pixel aesthetic */
+      background: transparent;
+      position: relative;
+    }
+
+    .feature-icon.circle::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      background: var(--neon-yellow);
+    }
+
+    .feature-card h3 {
+      font-size: clamp(1.25rem, 2vw, 1.55rem);
+      margin-bottom: 10px;
+      color: var(--deep-navy);
+    }
+
+    .feature-card p {
+      font-size: var(--type-body-sm);
+      color: var(--text-on-light-muted);
+      line-height: 1.6;
+    }
+
+    /* Slide 4 & 5: Charts */
+    .chart-slide-layout {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .pixel-chart-title {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .pixel-chart-title h2 {
+      color: var(--text-on-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .pixel-chart-title .subtitle {
+      font-family: var(--font-mono);
+      font-size: var(--type-body-sm);
+      color: #C9B8E8;
+      letter-spacing: 0.1em;
+    }
+
+    /* Bar Chart */
+    .pixel-bar-chart {
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 24px;
+      height: 320px;
+      padding: 0 20px;
+      position: relative;
+    }
+
+    .pixel-bar-chart::before {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--neon-cyan);
+      opacity: 0.5;
+    }
+
+    .chart-bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      max-width: 100px;
+    }
+
+    .chart-bar {
+      width: 100%;
+      background: var(--neon-cyan);
+      position: relative;
+      box-shadow: 4px 0 0 0 var(--deep-navy), 0 4px 0 0 var(--deep-navy), 4px 4px 0 0 var(--deep-navy);
+      transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .chart-bar.alt { background: var(--neon-pink); }
+    .chart-bar.alt2 { background: var(--neon-yellow); }
+
+    .chart-bar-label {
+      font-family: var(--font-mono);
+      font-size: var(--type-body-sm);
+      color: var(--text-on-dark-muted);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-value {
+      font-family: var(--font-mono);
+      font-size: var(--type-body-sm);
+      font-weight: 700;
+      color: #E8DCC8;
+      margin-bottom: 4px;
+    }
+
+    /* Horizontal Bar Chart */
+    .pixel-hbar-chart {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .hbar-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 50px;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hbar-label {
+      font-family: var(--font-mono);
+      font-size: var(--type-body-sm);
+      color: var(--deep-navy);
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .hbar-track {
+      height: 32px;
+      background: rgba(21, 29, 37, 0.1);
+      position: relative;
+    }
+
+    .hbar-fill {
+      height: 100%;
+      background: var(--deep-navy);
+      position: relative;
+      box-shadow: 4px 4px 0 var(--neon-yellow);
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hbar-fill.alt { background: var(--neon-cyan); box-shadow: 4px 4px 0 var(--deep-navy); }
+    .hbar-fill.alt2 { background: var(--neon-pink); box-shadow: 4px 4px 0 var(--deep-navy); }
+
+    .hbar-value {
+      font-family: var(--font-mono);
+      font-size: var(--type-body-sm);
+      font-weight: 700;
+      color: var(--deep-navy);
+    }
+
+    /* Slide 6: Timeline */
+    .timeline-container {
+      width: 100%;
+      max-width: 900px;
+      position: relative;
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: repeating-linear-gradient(
+        to bottom,
+        var(--deep-navy) 0px,
+        var(--deep-navy) 16px,
+        transparent 16px,
+        transparent 24px
+      );
+      transform: translateX(-50%);
+    }
+
+    .timeline-events {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+    }
+
+    .timeline-event {
+      display: grid;
+      grid-template-columns: 1fr 60px 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .timeline-event:nth-child(even) .timeline-text { grid-column: 3; text-align: left; }
+    .timeline-event:nth-child(even) .timeline-spacer { grid-column: 2; }
+    .timeline-event:nth-child(even) .timeline-empty { grid-column: 1; }
+
+    .timeline-event:nth-child(odd) .timeline-text { grid-column: 1; text-align: right; }
+    .timeline-event:nth-child(odd) .timeline-spacer { grid-column: 2; }
+    .timeline-event:nth-child(odd) .timeline-empty { grid-column: 3; }
+
+    .timeline-node {
+      width: 24px;
+      height: 24px;
+      background: var(--neon-cyan);
+      border: 4px solid var(--deep-navy);
+      justify-self: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .timeline-node.active { background: var(--neon-yellow); }
+
+    .timeline-text h4 {
+      font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+      color: var(--deep-navy);
+      margin-bottom: 6px;
+    }
+
+    .timeline-text p {
+      font-size: var(--type-body-sm);
+      color: var(--text-on-light-muted);
+      line-height: 1.55;
+    }
+
+    .timeline-text .date {
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1vw, 1rem);
+      color: #B8D4EE;
+      background: var(--deep-navy);
+      display: inline-block;
+      padding: 2px 10px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 700px) {
+      .timeline-event {
+        grid-template-columns: 40px 1fr !important;
+      }
+      .timeline-event .timeline-empty { display: none; }
+      .timeline-event .timeline-text { grid-column: 2 !important; text-align: left !important; }
+      .timeline-line { left: 20px; }
+      .timeline-node { justify-self: start; }
+    }
+
+    /* Slide 7: Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    @media (max-width: 800px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 400px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    .stat-block {
+      text-align: center;
+      padding: 32px 16px;
+      background: rgba(107, 163, 212, 0.1);
+      border: 2px solid rgba(107, 163, 212, 0.22);
+      position: relative;
+    }
+
+    .stat-block::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: 20px;
+      height: 20px;
+      border-top: 4px solid var(--neon-cyan);
+      border-left: 4px solid var(--neon-cyan);
+    }
+
+    .stat-block::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 20px;
+      height: 20px;
+      border-bottom: 4px solid var(--neon-cyan);
+      border-right: 4px solid var(--neon-cyan);
+    }
+
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 4.5vw, 3.75rem);
+      font-weight: 900;
+      color: #B8D4EE;
+      line-height: 1;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 0 var(--deep-navy);
+    }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1vw, 1rem);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-on-dark-muted);
+    }
+
+    /* Slide 8: Quote */
+    .quote-container {
+      max-width: 700px;
+      text-align: center;
+      position: relative;
+      padding: 48px;
+    }
+
+    .quote-mark {
+      font-family: var(--font-display);
+      font-size: 8rem;
+      line-height: 1;
+      color: var(--deep-navy);
+      opacity: 0.15;
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .quote-text {
+      font-family: var(--font-body);
+      font-size: clamp(1.25rem, 2.5vw, 1.85rem);
+      font-weight: 500;
+      color: var(--deep-navy);
+      line-height: 1.75;
+      position: relative;
+      z-index: 2;
+    }
+    .slide:not(.light-chrome) .quote-text {
+      font-size: clamp(1.3rem, 2.6vw, 1.9rem);
+    }
+    .quote-text.quote-accent {
+      color: #B8D4EE;
+      font-weight: 600;
+    }
+
+    .quote-author {
+      margin-top: 2rem;
+      font-family: var(--font-mono);
+      font-size: var(--type-body-sm);
+      color: var(--text-on-light-muted);
+      letter-spacing: 0.08em;
+    }
+    .slide:not(.light-chrome) .quote-author {
+      color: var(--text-on-dark-muted);
+    }
+
+    .quote-line {
+      width: 60px;
+      height: 4px;
+      background: var(--neon-yellow);
+      margin: 1.5rem auto 0;
+      box-shadow: 4px 4px 0 var(--deep-navy);
+    }
+
+    /* Slide 9: Comparison / Cards */
+    .tier-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    @media (max-width: 800px) {
+      .tier-grid { grid-template-columns: 1fr; max-width: 400px; }
+    }
+
+    .tier-card {
+      background: white;
+      padding: 36px 28px;
+      position: relative;
+      text-align: center;
+    }
+
+    .tier-card.featured {
+      background: var(--deep-navy);
+      color: white;
+      transform: translateY(-12px);
+      box-shadow: 8px 8px 0 var(--neon-yellow);
+    }
+
+    .tier-card:not(.featured) {
+      box-shadow: 6px 6px 0 rgba(21, 29, 37, 0.15);
+    }
+
+    .tier-name {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 2vw, 1.65rem);
+      margin-bottom: 10px;
+    }
+
+    .tier-price {
+      font-family: var(--font-mono);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      margin-bottom: 4px;
+    }
+
+    .tier-price span {
+      font-size: 0.8rem;
+      color: rgba(21, 29, 37, 0.5);
+    }
+
+    .tier-card.featured .tier-price span { color: rgba(255,255,255,0.5); }
+
+    .tier-desc {
+      font-size: var(--type-body-sm);
+      color: var(--text-on-light-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .tier-card.featured .tier-desc { color: var(--text-on-dark-muted); }
+
+    .tier-features {
+      list-style: none;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .tier-features li {
+      font-size: var(--type-body-sm);
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(21, 29, 37, 0.15);
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .tier-features li::before {
+      content: "+";
+      position: absolute;
+      left: 0;
+      font-family: var(--font-mono);
+      color: var(--neon-cyan);
+      font-weight: 700;
+    }
+
+    .tier-card.featured .tier-features li {
+      border-color: rgba(255,255,255,0.18);
+      color: var(--text-on-dark);
+    }
+    .tier-card.featured .tier-name { color: var(--text-on-dark); }
+
+    .tier-card.tier-out .tier-features li::before {
+      content: "−";
+      color: var(--neon-pink);
+    }
+    .tier-card.tier-out .tier-name { color: var(--deep-navy); }
+
+    /* Disclaimer (dark): glass cards on void */
+    .slide[data-slide="1"] {
+      padding: 88px 4vw 96px;
+    }
+    .slide.scope-slide h2 {
+      color: var(--text-on-dark);
+    }
+    .slide.scope-slide .scope-lead {
+      max-width: 720px;
+      margin: 0.6rem auto 0;
+      color: var(--text-on-dark-muted);
+      font-size: var(--type-body-sm);
+      line-height: 1.55;
+    }
+    .slide.scope-slide .tier-card:not(.featured) {
+      background: rgba(232, 241, 252, 0.06);
+      border: 2px solid rgba(240, 166, 202, 0.28);
+      color: var(--text-on-dark);
+      box-shadow: 6px 6px 0 rgba(10, 14, 39, 0.55);
+    }
+    .slide.scope-slide .tier-card.tier-out .tier-name {
+      color: var(--neon-pink);
+    }
+    .slide.scope-slide .tier-card.tier-out .tier-desc,
+    .slide.scope-slide .tier-card.tier-out .tier-features li {
+      color: var(--text-on-dark-muted);
+      border-color: rgba(242, 245, 249, 0.14);
+    }
+
+    /* Slide 10: CTA */
+    .cta-content {
+      text-align: center;
+      max-width: 600px;
+    }
+
+    .cta-content h2 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: var(--neon-cyan);
+      margin-bottom: 1rem;
+      text-shadow: 4px 4px 0 var(--deep-navy), 8px 8px 0 var(--neon-yellow);
+    }
+
+    .cta-content p {
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 2.5rem;
+      font-size: 1.1rem;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Decorative pixel landscape at bottom of CTA */
+    .pixel-landscape {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0;
+      z-index: 2;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .mountain {
+      background: var(--deep-navy);
+      width: 80px;
+      position: relative;
+    }
+
+    /* Arrow hints */
+    .nav-hint {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-on-dark-muted);
+      opacity: 0.65;
+      z-index: 100;
+      letter-spacing: 0.08em;
+      text-align: right;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .slides-container { transition: none; }
+      .starfield .star, .pixel-particles .p { animation: none; }
+      .chart-bar, .hbar-fill { transition: none; }
+      .quote-container,
+      .arch-node,
+      .arch-panel,
+      .arch-telemetry,
+      .reveal.is-visible { opacity: 1 !important; transform: none !important; animation: none !important; }
+      .slide-counter.tick { animation: none; }
+      .nav-dot { transition: none; }
+    }
+
+    .slide.dense-readable.scanlines::after { opacity: 0.35; }
+    .slide.dense-readable.grain::before { opacity: 0.012; }
+
+    /* === AWS USER GROUP CHROME — 8-Bit Orbit tokens only === */
+    .ug-brand {
+      position: absolute;
+      top: 16px;
+      left: 4vw;
+      right: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .aws-mark {
+      height: 28px;
+      width: auto;
+      display: block;
+      opacity: 0.92;
+    }
+    .aws-mark.for-light { display: none; }
+    .slide.light-chrome .aws-mark.for-dark { display: none; }
+    .slide.light-chrome .aws-mark.for-light { display: block; }
+    .ug-logo {
+      height: 80px;
+      width: auto;
+      display: block;
+    }
+    .ug-logo.for-light { display: none; }
+    .slide.light-chrome .ug-logo.for-dark { display: none; }
+    .slide.light-chrome .ug-logo.for-light { display: block; }
+    .ug-hero-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      margin: 0.2rem auto 0;
+    }
+    .ug-badge {
+      height: 156px;
+      width: auto;
+      display: block;
+    }
+    .ug-logo-hero {
+      height: 112px;
+      width: auto;
+      display: block;
+    }
+    .ug-footer {
+      position: absolute;
+      bottom: 56px;
+      left: 4vw;
+      z-index: 20;
+      font-family: var(--font-mono);
+      font-size: clamp(0.8rem, 0.95vw, 0.95rem);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-on-dark-muted);
+      opacity: 0.75;
+    }
+    .slide.light-chrome .ug-footer { color: var(--deep-navy); }
+    .slide.hide-footer .ug-footer { display: none; }
+
+    .bg-mesh {
+      background-color: var(--dark-void);
+      background-image:
+        radial-gradient(ellipse at 12% 0%, rgba(139, 114, 196, 0.12), transparent 50%),
+        radial-gradient(ellipse at 88% 100%, rgba(176, 120, 184, 0.08), transparent 46%),
+        radial-gradient(ellipse at 70% 18%, rgba(107, 163, 212, 0.06), transparent 40%),
+        linear-gradient(rgba(107, 163, 212, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 114, 196, 0.03) 1px, transparent 1px);
+      background-size: auto, auto, auto, 40px 40px, 40px 40px;
+    }
+
+    .speaker-frame {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 360px;
+      margin: 0 auto;
+      background: var(--deep-navy);
+      position: relative;
+      overflow: hidden;
+    }
+    .speaker-frame .speaker-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 12%;
+      filter: contrast(1.08) saturate(0.85);
+      display: block;
+    }
+    .speaker-frame .speaker-scan {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 2px,
+        rgba(16, 24, 32, 0.14) 2px,
+        rgba(16, 24, 32, 0.14) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+    .speaker-leader-badge {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      width: 88px;
+      height: auto;
+      z-index: 3;
+      pointer-events: none;
+      filter: drop-shadow(0 3px 8px rgba(16, 24, 32, 0.4));
+    }
+
+    .slide-content.dense {
+      justify-content: flex-start;
+    }
+    .agenda-list {
+      width: 100%;
+      max-width: 920px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .agenda-row {
+      display: grid;
+      grid-template-columns: 56px 1fr 72px;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 2px solid rgba(21, 29, 37, 0.18);
+      padding: 12px 16px;
+      position: relative;
+    }
+    .agenda-row::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: 16px;
+      height: 16px;
+      border-top: 4px solid var(--deep-navy);
+      border-left: 4px solid var(--deep-navy);
+    }
+    .agenda-idx {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(1.6rem, 2.2vw, 2rem);
+      color: var(--deep-navy);
+    }
+    .agenda-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--deep-navy);
+      font-size: clamp(1.25rem, 1.8vw, 1.55rem);
+    }
+    .agenda-desc {
+      font-size: var(--type-body-sm);
+      color: var(--text-on-light-muted);
+      line-height: 1.5;
+    }
+    .agenda-time {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--deep-navy);
+      color: var(--neon-yellow);
+      padding: 6px 10px;
+      text-align: center;
+    }
+
+    .arch-diagram {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .arch-panel {
+      padding: 12px 14px 14px;
+      border: 2px solid rgba(107, 163, 212, 0.28);
+      background: rgba(232, 241, 252, 0.07);
+    }
+    .arch-panel.obs {
+      border-color: rgba(67, 134, 74, 0.35);
+      background: rgba(231, 244, 232, 0.08);
+    }
+    .arch-panel-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--neon-cyan);
+      margin-bottom: 10px;
+    }
+    .arch-panel.obs .arch-panel-title { color: #9ad4a3; }
+    .arch-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .arch-node {
+      min-width: 118px;
+      flex: 1 1 118px;
+      max-width: 190px;
+      padding: 12px 10px;
+      text-align: center;
+      background: rgba(107, 163, 212, 0.1);
+      border: 2px solid rgba(107, 163, 212, 0.22);
+      position: relative;
+    }
+    .arch-panel.is-visible .arch-node {
+      animation: deck-fade-up 0.4s ease-out both;
+      animation-delay: var(--d, 0.08s);
+    }
+    .arch-node::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: 12px;
+      height: 12px;
+      border-top: 3px solid var(--neon-cyan);
+      border-left: 3px solid var(--neon-cyan);
+    }
+    .arch-service-icon {
+      height: 44px;
+      width: auto;
+      max-width: 56px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 8px;
+    }
+    .feature-card .arch-service-icon {
+      height: 48px;
+      margin-bottom: 14px;
+    }
+    .arch-node h3 {
+      font-size: clamp(0.88rem, 1.15vw, 1.05rem);
+      color: #B8D4EE;
+      margin-bottom: 4px;
+    }
+    .arch-node p {
+      font-size: clamp(0.78rem, 0.95vw, 0.92rem);
+      color: var(--text-on-dark-muted);
+      line-height: 1.35;
+    }
+    .arch-arrow {
+      font-family: var(--font-mono);
+      color: var(--neon-yellow);
+      font-size: 1rem;
+      align-self: center;
+    }
+    .arch-node.obs {
+      background: rgba(67, 134, 74, 0.12);
+      border-color: rgba(67, 134, 74, 0.32);
+    }
+    .arch-node.obs::before { border-color: #7ec88a; }
+    .arch-node.obs h3 { color: #b8e0be; }
+    .arch-note {
+      margin-top: 10px;
+      font-family: var(--font-mono);
+      font-size: clamp(0.7rem, 0.85vw, 0.82rem);
+      letter-spacing: 0.04em;
+      color: var(--text-on-dark-muted);
+      text-align: center;
+    }
+    .arch-telemetry {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 18px;
+      padding: 8px 10px;
+      border-top: 1px dashed rgba(212, 146, 90, 0.45);
+      border-bottom: 1px dashed rgba(212, 146, 90, 0.45);
+      font-family: var(--font-mono);
+      font-size: clamp(0.68rem, 0.82vw, 0.78rem);
+      letter-spacing: 0.04em;
+      color: var(--neon-yellow);
+    }
+    .slide.arch-fit {
+      padding: 80px 3vw 88px;
+    }
+    .slide.arch-fit h2 {
+      font-size: clamp(1.45rem, 3vw, 2.25rem);
+    }
+    .slide.diagram-slide .slide-content {
+      max-width: 96vw;
+    }
+    .slide.diagram-slide h2 {
+      margin-bottom: 0.4rem;
+    }
+    .diagram-shot {
+      width: 100%;
+      max-height: 76vh;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+      background: #0a0e27;
+    }
+    .carbon-grid {
+      width: 100%;
+      max-width: 1100px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .carbon-slot {
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px;
+      border: 2px dashed rgba(21, 29, 37, 0.35);
+      background: rgba(255, 255, 255, 0.45);
+    }
+    .carbon-slot img {
+      width: 100%;
+      max-height: 210px;
+      object-fit: contain;
+      background: #1b1f24;
+    }
+    .carbon-ph {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--deep-navy);
+      opacity: 0.7;
+    }
+    .carbon-cap {
+      margin-top: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: var(--deep-navy);
+    }
+    .carbon-cap strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .cmd-line {
+      font-family: var(--font-mono);
+      font-size: clamp(0.78rem, 1vw, 0.95rem);
+      letter-spacing: 0.02em;
+      color: var(--deep-navy);
+      background: rgba(21, 29, 37, 0.08);
+      border: 2px solid rgba(21, 29, 37, 0.16);
+      padding: 10px 14px;
+      margin-top: 1.1rem;
+      text-align: center;
+      word-break: break-all;
+    }
+    .slide:not(.light-chrome) .cmd-line {
+      color: var(--neon-yellow);
+      background: rgba(16, 24, 32, 0.55);
+      border-color: rgba(212, 146, 90, 0.35);
+    }
+    .playbook-list {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .playbook-row {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 14px;
+      align-items: start;
+      background: rgba(255, 255, 255, 0.14);
+      border: 2px solid rgba(21, 29, 37, 0.16);
+      padding: 10px 14px;
+    }
+    .playbook-idx {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--deep-navy);
+      padding-top: 4px;
+    }
+    .playbook-row h4 {
+      font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+      color: var(--deep-navy);
+      margin-bottom: 4px;
+    }
+    .playbook-row p {
+      font-size: clamp(0.88rem, 1.05vw, 1.02rem);
+      color: var(--text-on-light-muted);
+      line-height: 1.45;
+    }
+    .playbook-row code,
+    .arch-note code {
+      font-family: var(--font-mono);
+      font-size: 0.92em;
+    }
+    .scenario-status {
+      font-family: var(--font-mono);
+      font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+      font-weight: 700;
+      color: var(--deep-navy);
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+    .tier-card.featured .scenario-status { color: #E8DCC8; }
+
+    .signal-table {
+      width: 100%;
+      max-width: 980px;
+      border-collapse: collapse;
+    }
+    .signal-table th {
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1vw, 1rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #E8DCC8;
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--neon-cyan);
+    }
+    .signal-table td {
+      font-family: var(--font-body);
+      font-size: var(--type-body-sm);
+      color: var(--text-on-dark-muted);
+      padding: 16px 14px;
+      border-bottom: 1px solid rgba(107, 163, 212, 0.14);
+    }
+    .signal-table td:first-child {
+      font-family: var(--font-display);
+      color: #B8D4EE;
+      font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 960px;
+    }
+    @media (max-width: 800px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .agenda-row { grid-template-columns: 56px 1fr; gap: 10px; }
+    }
+
+    .pixel-hero-text.hero-talk {
+      font-size: clamp(2.1rem, 6.2vw, 5.2rem);
+      text-align: center;
+    }
+
+    .qa-list {
+      list-style: none;
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .qa-list li {
+      background: rgba(255, 255, 255, 0.14);
+      border: 2px solid rgba(21, 29, 37, 0.18);
+      padding: 18px 22px;
+      color: var(--text-on-light);
+      font-size: var(--type-body-sm);
+    }
+    .qa-list strong {
+      font-family: var(--font-display);
+      display: block;
+      margin-bottom: 4px;
+      color: var(--deep-navy);
+    }
+
+    .takeaway-list {
+      list-style: none;
+      width: 100%;
+      max-width: 720px;
+    }
+    .takeaway-list li {
+      color: var(--text-on-dark-muted);
+      font-size: var(--type-body);
+      padding: 10px 0 10px 28px;
+      position: relative;
+    }
+    .takeaway-list li::before {
+      content: "+";
+      position: absolute;
+      left: 0;
+      font-family: var(--font-mono);
+      color: var(--neon-yellow);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <div class="nav-dots" id="navDots"></div>
+  <div class="slide-counter" id="slideCounter">01 / 22</div>
+  <div class="nav-hint" id="navHint">CLIC / → REVELA</div>
+
+  <div class="slides-container" id="slidesContainer">
+
+    <!-- 01 COVER -->
+    <section class="slide bg-mesh scanlines grain crt-glow is-active" data-slide="1">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield1"></div>
+      <div class="pixel-particles" id="particles1"></div>
+      <div class="slide-content" style="z-index:10;">
+        <div class="hero-subtitle">AWS User Group Pereira · Lunes 26 oct 2026 · 19:00</div>
+        <h1 class="pixel-hero-text hero-talk">FROM BUG<br>TO INSIGHT</h1>
+        <h2 class="hero-tagline">Observability 101 with AWS</h2>
+        <p class="hero-tagline">De un fallo reproducible a evidencia en CloudWatch y X-Ray.</p>
+        <div class="hero-badges">
+          <span class="hero-badge">Nivel 100</span>
+          <span class="hero-badge">30 min</span>
+          <span class="hero-badge">Demo en vivo</span>
+        </div>
+      </div>
+      <div class="ug-footer">Juan Alejandro Pérez Bermúdez · Mega-Barto</div>
+    </section>
+
+    <!-- 02 SPEAKER -->
+    <section class="slide bg-grid-pink scanlines grain light-chrome" data-slide="2">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div class="split-layout">
+          <div class="speaker-frame pixel-corners yellow-corners">
+            <img class="speaker-photo" src="assets/speaker.png" alt="Juan Alejandro Pérez Bermúdez">
+            <span class="speaker-scan" aria-hidden="true"></span>
+            <img class="speaker-leader-badge" src="assets/Usergroups-badges_leader-dark.png" alt="AWS User Group Leader">
+          </div>
+          <div style="max-width: 480px;">
+            <span class="pixel-label">Speaker</span>
+            <h2 style="color: var(--deep-navy); margin-bottom: 0.6rem;">Juan Alejandro Pérez Bermúdez</h2>
+            <p style="font-family: var(--font-mono); font-size: clamp(0.95rem, 1.1vw, 1.1rem); letter-spacing: 0.1em; text-transform: uppercase; color: var(--deep-navy); margin-bottom: 1rem;">Mega-Barto · Software Engineer</p>
+            <p style="margin-bottom: 0.8rem;">
+              Ingeniero de Sistemas y Computación (UTP). Interés en desarrollo, calidad de software y comunidades tech.
+            </p>
+            <p style="margin-bottom: 0.8rem;">
+              Organiza y apoya FLISoL, Pereira Tech Talks, QAConf y AWS User Group Pereira.
+            </p>
+            <div class="hero-badges" style="justify-content: flex-start; margin-top: 1.4rem;">
+              <span class="hero-badge" style="border-color: var(--deep-navy); color: var(--deep-navy);">megabarto.com</span>
+              <span class="hero-badge" style="border-color: var(--deep-navy); color: var(--deep-navy);">GitHub · Mega-Barto</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 03 AGENDA -->
+    <section class="slide bg-grid-cyan scanlines grain light-chrome hide-footer dense-readable" data-slide="3">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content dense">
+        <div style="text-align: center; margin-bottom: 1rem;">
+          <span class="pixel-label">Agenda · 30 min</span>
+          <h2 style="color: var(--deep-navy);">Una investigación, de punta a punta</h2>
+        </div>
+        <div class="agenda-list">
+          <div class="agenda-row reveal reveal-flow">
+            <div class="agenda-idx">01</div>
+            <div>
+              <div class="agenda-title">Hook · 3 min</div>
+              <div class="agenda-desc">La API responde… y aun así algo falla o tarda. ¿Por dónde empezamos?</div>
+            </div>
+          </div>
+          <div class="agenda-row reveal reveal-flow">
+            <div class="agenda-idx">02</div>
+            <div>
+              <div class="agenda-title">Contexto · 5 min</div>
+              <div class="agenda-desc">Por qué importa, tres pilares y monitorizar frente a investigar.</div>
+            </div>
+          </div>
+          <div class="agenda-row reveal reveal-flow">
+            <div class="agenda-idx">03</div>
+            <div>
+              <div class="agenda-title">Arquitectura · 5 min</div>
+              <div class="agenda-desc">Arquitectura y los fragmentos de template.yaml que la hacen observable.</div>
+            </div>
+          </div>
+          <div class="agenda-row reveal reveal-flow">
+            <div class="agenda-idx">04</div>
+            <div>
+              <div class="agenda-title">Demo en vivo · 12 min</div>
+              <div class="agenda-desc">Normal, error y latencia. Luego logs, métricas y trazas.</div>
+            </div>
+          </div>
+          <div class="agenda-row reveal reveal-flow">
+            <div class="agenda-idx">05</div>
+            <div>
+              <div class="agenda-title">Cierre · 2 min</div>
+              <div class="agenda-desc">Aprendizajes, buenas prácticas y el siguiente paso en un servicio propio.</div>
+            </div>
+          </div>
+          <div class="agenda-row reveal reveal-flow">
+            <div class="agenda-idx">06</div>
+            <div>
+              <div class="agenda-title">Q&amp;A · 3 min</div>
+              <div class="agenda-desc">Sampling, cómo medir el costo y qué no reemplazan las pruebas.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 04 DISCLAIMER / SCOPE -->
+    <section class="slide bg-grid scanlines grain crt-glow scope-slide" data-slide="4">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield4"></div>
+      <div class="slide-content" style="z-index:10;">
+        <div style="text-align: center; margin-bottom: 1.2rem;">
+          <span class="pixel-label">Alcance · Nivel 100</span>
+          <h2>Demo en vivo, alcance acotado</h2>
+          <p class="scope-lead">
+            Habrá <strong style="color: var(--neon-cyan);">demo en vivo</strong> en la consola de AWS:
+            una investigación guiada con escenarios controlados. No es un tour de toda la consola
+            ni un laboratorio de despliegue.
+          </p>
+        </div>
+        <div class="compare-grid">
+          <div class="tier-card featured reveal">
+            <div class="tier-name">Dentro del alcance</div>
+            <div class="tier-desc">Lo que sí hacemos hoy.</div>
+            <ul class="tier-features">
+              <li>Request → logs → métricas → trazas</li>
+              <li>Tres pilares y monitorizar vs investigar</li>
+              <li>App serverless ya desplegada</li>
+              <li>Escenarios: normal, error y latencia</li>
+              <li>Cómo leer CloudWatch y X-Ray en ese camino</li>
+            </ul>
+          </div>
+          <div class="tier-card tier-out reveal">
+            <div class="tier-name">Fuera de alcance</div>
+            <div class="tier-desc">Queda para otra sesión.</div>
+            <ul class="tier-features">
+              <li>Construir o desplegar la pila en vivo</li>
+              <li>OpenTelemetry o instrumentación avanzada</li>
+              <li>Diseño de SLO / SLI de producción</li>
+              <li>Debugging línea a línea del código</li>
+              <li>Comparar vendors o recorrer toda la consola</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 05 PREÁMBULO -->
+    <section class="slide bg-mesh scanlines grain crt-glow" data-slide="5">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield5"></div>
+      <div class="slide-content">
+        <div class="quote-container pixel-corners" style="max-width: 820px;">
+          <span class="pixel-label">Hook</span>
+          <p class="quote-text reveal reveal-flow" style="text-align: center;">
+            El dashboard dice “OK”. El cliente recibe un 200… y aun así la app se siente lenta.
+          </p>
+          <p class="quote-text reveal reveal-flow" style="text-align: center;">
+            Otras veces: un 502 en la API y la causa no aparece a simple vista.
+          </p>
+          <p class="quote-text quote-accent reveal reveal-flow" style="text-align: center; margin-top: 1.2rem;">
+            ¿Cómo encontramos la causa sin recorrer todo el código?
+          </p>
+          <div class="quote-author reveal reveal-flow" style="text-align: center; margin-top: 1.2rem;">Con evidencia: logs, métricas y trazas</div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 06 DIVIDER TEORÍA -->
+    <section class="slide bg-grid scanlines grain crt-glow" data-slide="6">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield6"></div>
+      <div class="slide-content" style="z-index:10;">
+        <span class="pixel-label">02 · Contexto</span>
+        <h1 class="pixel-hero-text" style="font-size: clamp(2.4rem, 7vw, 6rem); text-align: center;">OBSERVABILIDAD</h1>
+        <p class="hero-tagline">Qué es, qué pregunta responde cada señal, y por qué no basta con que el dashboard diga “OK”.</p>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 07 WHAT IS OBSERVABILITY -->
+    <section class="slide bg-grid-lavender scanlines grain light-chrome" data-slide="7">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div class="split-layout">
+          <div>
+            <span class="pixel-label">Definición</span>
+            <h2 style="color: var(--deep-navy); margin-bottom: 1.2rem;">Inferir el interior desde las salidas</h2>
+            <p style="margin-bottom: 1rem;">
+              Observabilidad es poder explicar el estado interno de un sistema a partir de lo que emite: logs, métricas y trazas.
+            </p>
+            <p style="margin-bottom: 1rem;">
+              La calidad no termina en el test ni en el deploy. También es entender cómo se comporta la app mientras corre.
+            </p>
+          </div>
+          <div class="feature-card reveal reveal-flow" style="text-align: left; padding: 36px 32px;">
+            <h3 style="margin-bottom: 12px;">La pregunta de hoy</h3>
+            <p>Cuando el monitor dice “OK” pero el usuario tiene problemas, ¿qué evidencia nos permite investigar sin adivinar?</p>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- IMPORTANCIA -->
+    <section class="slide bg-grid-cyan scanlines grain light-chrome" data-slide="8">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 1.6rem;">
+          <span class="pixel-label">Por qué importa</span>
+          <h2 style="color: var(--deep-navy);">Sin señales, el fallo se adivina</h2>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card reveal">
+            <h3>Sistemas repartidos</h3>
+            <p>API, función y tabla no comparten un solo log local. La causa vive en el camino, no en un proceso.</p>
+          </div>
+          <div class="feature-card reveal">
+            <h3>Menos tiempo a ciegas</h3>
+            <p>Una alarma dice que algo cambió. Logs y trazas acortan el camino del síntoma a dónde mirar.</p>
+          </div>
+          <div class="feature-card reveal">
+            <h3>Calidad en ejecución</h3>
+            <p>Datos reales, carga y dependencias se apartan de lo que cubrió un test aislado.</p>
+          </div>
+          <div class="feature-card reveal">
+            <h3>La misma evidencia</h3>
+            <p>Dev, QA y ops discuten un hecho compartido: el mismo request, la misma métrica, la misma traza.</p>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 08 THREE PILLARS -->
+    <section class="slide bg-grid-cyan scanlines grain light-chrome" data-slide="9">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <span class="pixel-label">Tres pilares</span>
+          <h2 style="color: var(--deep-navy);">Tres preguntas, no tres copias</h2>
+        </div>
+        <div class="feature-grid" style="grid-template-columns: repeat(3, 1fr); max-width: 1000px;">
+          <div class="feature-card reveal">
+            <img class="arch-service-icon" src="assets/aws-arch/cloudwatch-logs.svg" alt="Amazon CloudWatch Logs">
+            <h3>Logs</h3>
+            <p>¿Qué ocurrió en esta ejecución? Contexto de un request: escenario, mensaje, error.</p>
+          </div>
+          <div class="feature-card reveal">
+            <img class="arch-service-icon" src="assets/aws-arch/cloudwatch-metrics.svg" alt="Amazon CloudWatch Metrics">
+            <h3>Métricas</h3>
+            <p>¿Cómo se comporta el servicio en el tiempo? Invocaciones, errores y duración frente al baseline.</p>
+          </div>
+          <div class="feature-card reveal">
+            <img class="arch-service-icon" src="assets/aws-arch/x-ray.svg" alt="AWS X-Ray">
+            <h3>Trazas</h3>
+            <p>¿Por qué componentes pasó esta solicitud y dónde se fue el tiempo? El recorrido, no el archivo.</p>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 09 MONITOR VS INVESTIGATE -->
+    <section class="slide bg-grid-pink scanlines grain light-chrome" data-slide="10">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <span class="pixel-label">Distinción clave</span>
+          <h2 style="color: var(--deep-navy);">Monitorizar no es investigar</h2>
+        </div>
+        <div class="compare-grid">
+          <div class="tier-card reveal">
+            <div class="tier-name">Monitorizar</div>
+            <div class="tier-desc">Avisa que algo cambió.</div>
+            <ul class="tier-features">
+              <li>Alarmas y umbrales</li>
+              <li>Dashboards en verde / rojo</li>
+              <li>Responde: ¿hay un problema?</li>
+              <li>No explica el porqué</li>
+            </ul>
+          </div>
+          <div class="tier-card featured reveal">
+            <div class="tier-name">Investigar</div>
+            <div class="tier-desc">Explica el porqué, con evidencia.</div>
+            <ul class="tier-features">
+              <li>Log estructurado de esa request</li>
+              <li>Métrica comparada con el baseline</li>
+              <li>Traza hasta el subsegmento</li>
+              <li>Responde: ¿dónde mirar?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 10 DIVIDER ARCH -->
+    <section class="slide bg-grid scanlines grain crt-glow" data-slide="11">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield10"></div>
+      <div class="slide-content" style="z-index:10;">
+        <span class="pixel-label">03 · Arquitectura</span>
+        <h1 class="pixel-hero-text" style="font-size: clamp(2.2rem, 6vw, 5.4rem); text-align: center;">ARQUITECTURA</h1>
+        <p class="hero-tagline">Una app serverless ya desplegada. Hoy no construimos el stack: lo observamos.</p>
+        <p class="hero-tagline reveal">Podrás recrear esta demo con los recursos al final de la presentación.</p>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 11 ARCHITECTURE -->
+    <section class="slide bg-grid scanlines grain crt-glow arch-fit" data-slide="12">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 0.7rem;">
+          <span class="pixel-label">Stack</span>
+          <h2>Una request, dos sistemas</h2>
+        </div>
+        <div class="arch-diagram">
+          <div class="arch-panel app reveal reveal-flow">
+            <div class="arch-panel-title">1. Aplicación bajo análisis</div>
+            <div class="arch-row">
+              <div class="arch-node" style="--d: 0.06s">
+                <h3>Cliente</h3>
+                <p>Petición HTTP / curl</p>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" style="--d: 0.12s">
+                <img class="arch-service-icon" src="assets/aws-arch/api-gateway.svg" alt="Amazon API Gateway">
+                <h3>Amazon API Gateway</h3>
+                <p>REST API · stage Prod</p>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" style="--d: 0.18s">
+                <img class="arch-service-icon" src="assets/aws-arch/lambda.svg" alt="AWS Lambda">
+                <h3>AWS Lambda</h3>
+                <p>Lógica y fallos controlados</p>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" style="--d: 0.24s">
+                <img class="arch-service-icon" src="assets/aws-arch/dynamodb.svg" alt="Amazon DynamoDB">
+                <h3>Amazon DynamoDB</h3>
+                <p>Persistencia · ítem demo-id</p>
+              </div>
+            </div>
+            <p class="arch-note">Logs JSON en Lambda. Escenarios solo en GET /{id}?scenario=</p>
+          </div>
+          <div class="arch-telemetry reveal reveal-flow">
+            <span>Lambda ⇢ logs de ejecución</span>
+            <span>API / Lambda ⇢ métricas</span>
+            <span>API / Lambda ⇢ trazas</span>
+          </div>
+          <div class="arch-panel obs reveal reveal-flow">
+            <div class="arch-panel-title">2. Sistema de observabilidad</div>
+            <div class="arch-row">
+              <div class="arch-node obs" style="--d: 0.36s">
+                <img class="arch-service-icon" src="assets/aws-arch/cloudwatch-logs.svg" alt="Amazon CloudWatch Logs">
+                <h3>CloudWatch Logs</h3>
+                <p>Eventos y errores</p>
+              </div>
+              <div class="arch-node obs" style="--d: 0.42s">
+                <img class="arch-service-icon" src="assets/aws-arch/cloudwatch-metrics.svg" alt="Amazon CloudWatch Metrics">
+                <h3>CloudWatch Metrics</h3>
+                <p>Latencia, invocaciones, errores</p>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node obs" style="--d: 0.48s">
+                <img class="arch-service-icon" src="assets/aws-arch/cloudwatch.svg" alt="Amazon CloudWatch Dashboards">
+                <h3>Dashboards y alarmas</h3>
+                <p>Baseline vs anomalía</p>
+              </div>
+              <div class="arch-node obs" style="--d: 0.54s">
+                <img class="arch-service-icon" src="assets/aws-arch/x-ray.svg" alt="AWS X-Ray">
+                <h3>AWS X-Ray</h3>
+                <p>Trazas distribuidas</p>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node obs" style="--d: 0.6s">
+                <img class="arch-service-icon" src="assets/aws-arch/x-ray.svg" alt="Análisis de trazas y mapa">
+                <h3>Análisis y mapa</h3>
+                <p>Dónde se fue el tiempo</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- DIAGRAMA DE SERVICIOS -->
+    <section class="slide bg-grid scanlines grain crt-glow diagram-slide" data-slide="13">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content" style="z-index:10;">
+        <div style="text-align: center;">
+          <span class="pixel-label">Mapa de la demo</span>
+          <h2>Cómo se relacionan los servicios</h2>
+        </div>
+        <img class="diagram-shot" src="assets/diagram-stack.png" alt="Diagrama: aplicación bajo análisis y sistema de observabilidad">
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 12 SCENARIOS -->
+    <section class="slide bg-grid-lavender scanlines grain light-chrome" data-slide="14">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 1.8rem;">
+          <span class="pixel-label">GET /{id}?scenario=</span>
+          <h2 style="color: var(--deep-navy);">Tres preguntas reproducibles</h2>
+        </div>
+        <div class="tier-grid">
+          <div class="tier-card reveal">
+            <div class="tier-name">Normal</div>
+            <div class="scenario-status">HTTP 200</div>
+            <div class="tier-desc">Línea base. JSON del ítem.</div>
+            <ul class="tier-features">
+              <li>Log <code>scenario: normal</code></li>
+              <li>Duration baja</li>
+              <li>Traza Lambda + DynamoDB</li>
+            </ul>
+          </div>
+          <div class="tier-card featured reveal">
+            <div class="tier-name">Error</div>
+            <div class="scenario-status">HTTP 502</div>
+            <div class="tier-desc">Invocación fallida a propósito.</div>
+            <ul class="tier-features">
+              <li>Log <code>controlled demo failure</code></li>
+              <li>Métrica Errors sube</li>
+              <li>El cliente no ve el mensaje interno</li>
+            </ul>
+          </div>
+          <div class="tier-card reveal">
+            <div class="tier-name">Latency</div>
+            <div class="scenario-status">HTTP 200 · ~2,5 s</div>
+            <div class="tier-desc">Responde bien… pero tarde.</div>
+            <ul class="tier-features">
+              <li>Duration y alarma</li>
+              <li>Subsegmento X-Ray</li>
+              <li><code>demo-artificial-latency</code></li>
+            </ul>
+          </div>
+        </div>
+        <p class="cmd-line reveal">GET {WebEndpoint}demo-id?scenario=error</p>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 13 DIVIDER DEMO -->
+    <section class="slide bg-grid scanlines grain crt-glow" data-slide="15">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield13"></div>
+      <div class="slide-content" style="z-index:10;">
+        <span class="pixel-label">04 · Demo</span>
+        <h1 class="pixel-hero-text" style="font-size: clamp(2.2rem, 6vw, 5.4rem); text-align: center;">DEMO<br>EN VIVO</h1>
+        <p class="hero-tagline reveal">Consola en us-east-1. Primero línea base. Después error o latencia.<br></p>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 14 DEMO FLOW -->
+    <section class="slide bg-grid-pink scanlines grain light-chrome hide-footer dense-readable" data-slide="16">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content dense">
+        <div style="text-align: center; margin-bottom: 1rem;">
+          <span class="pixel-label">Playbook · ~12 min</span>
+          <h2 style="color: var(--deep-navy);">Una historia en cinco pasos</h2>
+        </div>
+        <div class="playbook-list">
+          <div class="playbook-row reveal reveal-flow">
+            <div class="playbook-idx">Paso 0</div>
+            <div>
+              <h4>Semilla</h4>
+              <p>POST / con <code>{"id":"demo-id"}</code> (pre-demo). Anotar <code>WebEndpoint</code>.</p>
+            </div>
+          </div>
+          <div class="playbook-row reveal reveal-flow">
+            <div class="playbook-idx">Paso 1</div>
+            <div>
+              <h4>Línea base</h4>
+              <p>GET /demo-id → 200. Dashboard en calma; traza Lambda + DynamoDB.</p>
+            </div>
+          </div>
+          <div class="playbook-row reveal reveal-flow">
+            <div class="playbook-idx">Paso 2</div>
+            <div>
+              <h4>Error controlado</h4>
+              <p>GET …?scenario=error → 502. Log <code>controlled demo failure</code> → métrica Errors.</p>
+            </div>
+          </div>
+          <div class="playbook-row reveal reveal-flow">
+            <div class="playbook-idx">Paso 3</div>
+            <div>
+              <h4>Latencia artificial</h4>
+              <p>GET …?scenario=latency → 200 en ~2,5 s. Duration, alarma y subsegmento X-Ray.</p>
+            </div>
+          </div>
+          <div class="playbook-row reveal reveal-flow">
+            <div class="playbook-idx">Paso 4</div>
+            <div>
+              <h4>Cerrar la historia</h4>
+              <p>Cada señal responde una pregunta distinta: log → métrica → traza.</p>
+            </div>
+          </div>
+        </div>
+        <p class="cmd-line reveal">GET {WebEndpoint}demo-id?scenario=latency</p>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 15 EVIDENCE -->
+    <section class="slide bg-grid scanlines grain crt-glow" data-slide="17">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 1.6rem;">
+          <span class="pixel-label">Matriz de evidencia</span>
+          <h2>Qué pregunta responde cada señal</h2>
+        </div>
+        <table class="signal-table">
+          <thead>
+            <tr>
+              <th>Pregunta</th>
+              <th>Log</th>
+              <th>Métrica</th>
+              <th>Traza</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>¿Qué pasó aquí?</td>
+              <td>scenario / message</td>
+              <td>Errors, Duration</td>
+              <td>Segmentos</td>
+            </tr>
+            <tr>
+              <td>¿Hay anomalía?</td>
+              <td>Contexto JSON</td>
+              <td>Dashboard</td>
+              <td>Mapa de servicios</td>
+            </tr>
+            <tr>
+              <td>¿Dónde profundizar?</td>
+              <td>Mensaje / stack</td>
+              <td>Alarma</td>
+              <td>Subsegmento</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 16 QUALITY -->
+    <section class="slide bg-grid-cyan scanlines grain light-chrome" data-slide="18">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <span class="pixel-label">Calidad en runtime</span>
+          <h2 style="color: var(--deep-navy);">Un 200 no es el final del test</h2>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card reveal">
+            <div class="feature-icon cube"></div>
+            <h3>Contrastar</h3>
+            <p>Comportamiento real frente al resultado de negocio esperado.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon diamond"></div>
+            <h3>Reproducir</h3>
+            <p>Incidentes más fáciles de repetir cuando hay evidencia compartida.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon cross"></div>
+            <h3>Priorizar</h3>
+            <p>Acciones correctivas con datos, no solo con intuición.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon circle"></div>
+            <h3>Alinear</h3>
+            <p>Dev, QA y ops miran el mismo dashboard y la misma traza.</p>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 17 TAKEAWAYS -->
+    <section class="slide bg-grid scanlines grain crt-glow" data-slide="19">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield17"></div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <span class="pixel-label">05 · Cierre</span>
+          <h2>Lo que nos llevamos</h2>
+        </div>
+        <ul class="takeaway-list" style="margin: 0 auto;">
+          <li class="reveal">Logs, métricas y trazas son complementarios.</li>
+          <li class="reveal">Monitorizar avisa. Investigar explica.</li>
+          <li class="reveal">Un 200 no garantiza calidad: elige una métrica, un log y una traza útiles en un servicio propio.</li>
+        </ul>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- RECOMENDACIONES -->
+    <section class="slide bg-grid-cyan scanlines grain light-chrome dense-readable" data-slide="20">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content dense">
+        <div style="text-align: center; margin-bottom: 1.1rem;">
+          <span class="pixel-label">Antes del Q&amp;A</span>
+          <h2 style="color: var(--deep-navy);">Prácticas y próximos pasos</h2>
+        </div>
+        <div class="compare-grid">
+          <div class="tier-card reveal">
+            <div class="tier-name">Buenas prácticas</div>
+            <div class="tier-desc">Lo que esta demo ya enseña a copiar con criterio.</div>
+            <ul class="tier-features">
+              <li>Log JSON con contexto; sin secretos ni payloads enormes</li>
+              <li>Retención corta en ensayos (aquí, 7 días)</li>
+              <li>Alarma sobre un umbral que alguien va a mirar</li>
+              <li>Muestreo al 100 % solo en la demo</li>
+              <li>Borrar la pila cuando termine el ensayo</li>
+            </ul>
+          </div>
+          <div class="tier-card featured reveal">
+            <div class="tier-name">Próximos pasos</div>
+            <div class="tier-desc">Un servicio propio, esta semana.</div>
+            <ul class="tier-features">
+              <li>Un log estructurado, una métrica y una traza útil</li>
+              <li>Un dashboard mínimo y una alarma accionable</li>
+              <li>Cost Explorer agrupado por servicio</li>
+              <li>Sampling y retención pensados para prod</li>
+              <li>SLO y OpenTelemetry quedan para otra sesión</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 18 Q&A -->
+    <section class="slide bg-grid-lavender scanlines grain light-chrome" data-slide="21">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="slide-content">
+        <div style="text-align: center; margin-bottom: 1.8rem;">
+          <span class="pixel-label">06 · Q&amp;A</span>
+          <h2 style="color: var(--deep-navy);">Preguntas frecuentes</h2>
+        </div>
+        <ul class="qa-list">
+          <li class="reveal reveal-flow">
+            <strong>¿X-Ray muestra todas las requests?</strong>
+            Por defecto, no: hay muestreo. En esta demo hay regla al 100 %; en producción se diseña sampling y costo.
+          </li>
+          <li class="reveal reveal-flow">
+            <strong>¿Cómo mido el costo?</strong>
+            En Cost Explorer, últimos 7 días, agrupa por servicio. Lo que mueve la cifra aquí es CloudWatch Logs (ingestión y retención de 7 días) y X-Ray al 100 %. Lambda, API Gateway y DynamoDB, con este tráfico, suelen quedar en free tier o en centavos. El budget de USD 30 avisa; no apaga recursos. Los cargos pueden tardar hasta 24 h. En prod baja el sampling y no copies la regla de la demo.
+          </li>
+          <li class="reveal reveal-flow">
+            <strong>¿Esto reemplaza las pruebas?</strong>
+            No. Las complementa en runtime, donde un test aislado no siempre alcanza.
+          </li>
+        </ul>
+      </div>
+      <div class="ug-footer">AWS User Group Pereira · Observability 101</div>
+    </section>
+
+    <!-- 19 THANKS -->
+    <section class="slide bg-mesh scanlines grain crt-glow" data-slide="22">
+      <div class="ug-brand">
+        <img class="aws-mark for-dark" src="assets/aws-logo-white.svg" alt="AWS">
+        <img class="aws-mark for-light" src="assets/aws-logo-dark.svg" alt="AWS">
+        <img class="ug-logo for-dark" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+        <img class="ug-logo for-light" src="assets/ug-lockup-on-light.png" alt="AWS User Groups Pereira">
+      </div>
+      <div class="starfield" id="starfield19"></div>
+      <div class="pixel-particles" id="particles19"></div>
+      <div class="pixel-landscape" id="landscape19"></div>
+      <div class="slide-content" style="z-index:10;">
+        <div class="cta-content">
+          <h2>Gracias</h2>
+          <p>AWS User Group Pereira · 26 oct 2026 · 19:00 · Híbrido<br>Juan Alejandro Pérez Bermúdez · Mega-Barto</p>
+          <div class="ug-hero-row">
+            <img class="ug-badge" src="assets/ug-pereira-badge.png" alt="AWS User Group Pereira">
+            <img class="ug-logo-hero" src="assets/ug-lockup-on-dark.png" alt="AWS User Groups Pereira">
+          </div>
+          <div class="cta-buttons" style="margin-top: 1.6rem;">
+            <a class="pixel-btn" href="https://github.com/Mega-Barto/Observability-101-with-AWS" target="_blank" rel="noopener">Repo en GitHub</a>
+            <a class="pixel-btn pink-btn" href="https://megabarto.com" target="_blank" rel="noopener">megabarto.com</a>
+          </div>
+        </div>
+      </div>
+      <div class="ug-footer">Replica la demo desde el README · sam build &amp; sam deploy</div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  const totalSlides = 22;
+  let currentSlide = 0;
+  let currentStep = 0;
+  const container = document.getElementById('slidesContainer');
+  const counter = document.getElementById('slideCounter');
+  const dotsContainer = document.getElementById('navDots');
+  const deck = document.getElementById('deck');
+  const navHint = document.getElementById('navHint');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const fragments = slides.map((slide) => Array.from(slide.querySelectorAll('.reveal')));
+
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      goToSlide(i, 'jump');
+    });
+    dotsContainer.appendChild(dot);
+  }
+
+  const dots = document.querySelectorAll('.nav-dot');
+
+  function applyFragments(slideIndex, step) {
+    fragments[slideIndex].forEach((el, i) => {
+      el.classList.toggle('is-visible', i < step);
+    });
+  }
+
+  function syncHint() {
+    const total = fragments[currentSlide].length;
+    const remaining = total - currentStep;
+    deck.dataset.more = remaining > 0 ? '1' : '0';
+    if (navHint) {
+      navHint.innerHTML = remaining > 0
+        ? 'CLIC / → REVELA · ' + currentStep + '/' + total
+        : 'CLIC / → SIGUIENTE';
+    }
+  }
+
+  function updateUI() {
+    container.style.transform = `translateY(-${currentSlide * 100}vh)`;
+    counter.classList.remove('tick');
+    void counter.offsetWidth;
+    counter.textContent = String(currentSlide + 1).padStart(2, '0') + ' / ' + String(totalSlides).padStart(2, '0');
+    counter.classList.add('tick');
+    dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('is-active', i === currentSlide);
+    });
+    applyFragments(currentSlide, currentStep);
+    syncHint();
+  }
+
+  function goToSlide(index, direction) {
+    if (index < 0 || index >= totalSlides) return;
+    currentSlide = index;
+    const total = fragments[index].length;
+    currentStep = direction === 'back' ? total : 0;
+    updateUI();
+  }
+
+  function next() {
+    const total = fragments[currentSlide].length;
+    if (currentStep < total) {
+      currentStep += 1;
+      applyFragments(currentSlide, currentStep);
+      syncHint();
+      return;
+    }
+    goToSlide(currentSlide + 1, 'forward');
+  }
+
+  function prev() {
+    if (currentStep > 0) {
+      currentStep -= 1;
+      applyFragments(currentSlide, currentStep);
+      syncHint();
+      return;
+    }
+    goToSlide(currentSlide - 1, 'back');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      next();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      prev();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goToSlide(0, 'jump');
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goToSlide(totalSlides - 1, 'jump');
+    }
+  });
+
+  deck.addEventListener('click', (e) => {
+    if (e.target.closest('a, button, .nav-dot, .nav-dots, .nav-hint')) return;
+    next();
+  });
+
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartY - e.changedTouches[0].clientY;
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? next() : prev();
+    }
+  });
+
+  let wheelLock = false;
+  document.addEventListener('wheel', (e) => {
+    if (wheelLock) return;
+    wheelLock = true;
+    e.deltaY > 0 ? next() : prev();
+    const total = fragments[currentSlide].length;
+    const delay = currentStep < total ? 380 : 700;
+    setTimeout(() => { wheelLock = false; }, delay);
+  }, { passive: true });
+
+  function generateStars(containerId, count = 40) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = Math.random() * 3 + 's';
+      container.appendChild(star);
+    }
+  }
+
+  generateStars('starfield1', 50);
+  generateStars('starfield4', 28);
+  generateStars('starfield5', 30);
+  generateStars('starfield6', 35);
+  generateStars('starfield10', 35);
+  generateStars('starfield13', 40);
+  generateStars('starfield17', 35);
+  generateStars('starfield19', 45);
+
+  function generateParticles(containerId, colors, count = 12) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'p';
+      p.style.background = colors[i % colors.length];
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = Math.random() * 100 + '%';
+      p.style.animationDelay = Math.random() * 5 + 's';
+      p.style.animationDuration = (6 + Math.random() * 6) + 's';
+      container.appendChild(p);
+    }
+  }
+
+  generateParticles('particles1', ['var(--ug-blue)', 'var(--ug-purple)'], 8);
+  generateParticles('particles19', ['var(--ug-blue)', 'var(--ug-purple)'], 10);
+
+  function generateLandscape() {
+    const container = document.getElementById('landscape19');
+    if (!container) return;
+    const heights = [30, 50, 70, 40, 60, 35, 55, 45, 80, 25, 50, 40];
+    heights.forEach((h, i) => {
+      const mtn = document.createElement('div');
+      mtn.className = 'mountain';
+      mtn.style.height = h + 'px';
+      mtn.style.width = (60 + (i % 3) * 20) + 'px';
+      container.appendChild(mtn);
+    });
+  }
+  generateLandscape();
+
+  updateUI();
+})();
+</script>
+
+</body>
+</html>
